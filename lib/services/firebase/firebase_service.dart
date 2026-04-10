@@ -2,6 +2,8 @@ import 'package:admin_control/models/category_model.dart' as category_model;
 import 'package:admin_control/models/order_model.dart';
 import 'package:admin_control/models/product_model.dart';
 import 'package:admin_control/models/subcategory_model.dart';
+import 'package:admin_control/models/delivery_model.dart';
+import 'package:admin_control/models/staff_model.dart';
 import 'package:admin_control/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart' show debugPrint;
@@ -14,6 +16,7 @@ class FirestoreService {
   CollectionReference<Map<String, dynamic>> get categories => _db.collection('categories');
   CollectionReference<Map<String, dynamic>> get subcategories => _db.collection('subcategories');
   CollectionReference<Map<String, dynamic>> get orders => _db.collection('orders');
+  CollectionReference<Map<String, dynamic>> get staff => _db.collection('staff');
 
   Exception _error(dynamic e) {
     debugPrint('🔥 Firestore Error: $e');
@@ -205,6 +208,54 @@ class FirestoreService {
         }
       });
       return docRef.id;
+    } catch (e) {
+      throw _error(e);
+    }
+  }
+
+
+  Stream<List<DeliveryModel>> streamDeliveries() {
+    return orders.orderBy('updatedAt', descending: true).snapshots().map(
+      (snap) => snap.docs
+          .map((doc) => DeliveryModel.fromOrderMap(doc.data(), doc.id))
+          .toList(),
+    );
+  }
+
+  Future<void> updateDelivery({
+    required String orderId,
+    required DeliveryStatus status,
+    required String deliveryPartner,
+    required String trackingId,
+  }) async {
+    final model = DeliveryModel(
+      orderId: orderId,
+      deliveryStatus: status,
+      deliveryPartner: deliveryPartner,
+      trackingId: trackingId,
+    );
+
+    try {
+      await orders.doc(orderId).update(model.toMap());
+      await orders.doc(orderId).collection('delivery_logs').add({
+        ...model.toMap(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw _error(e);
+    }
+  }
+
+  Stream<List<StaffModel>> streamStaff() {
+    return staff.orderBy('createdAt', descending: true).snapshots().map(
+      (snap) => snap.docs.map((doc) => StaffModel.fromMap(doc.data(), doc.id)).toList(),
+    );
+  }
+
+  Future<void> upsertStaff(StaffModel model) async {
+    try {
+      final doc = model.id.isEmpty ? staff.doc() : staff.doc(model.id);
+      await doc.set(model.copyWith(id: doc.id).toMap(isCreate: model.id.isEmpty));
     } catch (e) {
       throw _error(e);
     }

@@ -13,6 +13,8 @@ class UserModel {
   final bool isBlocked;
   final int totalOrders;
   final double totalSpent;
+  final double walletBalance;
+  final String kycStatus;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -29,6 +31,8 @@ class UserModel {
     this.isBlocked = false,
     this.totalOrders = 0,
     this.totalSpent = 0,
+    this.walletBalance = 0,
+    this.kycStatus = 'PENDING',
     this.createdAt,
     this.updatedAt,
   });
@@ -46,6 +50,8 @@ class UserModel {
       'isBlocked': isBlocked,
       'totalOrders': totalOrders,
       'totalSpent': totalSpent,
+      'walletBalance': walletBalance,
+      'kycStatus': kycStatus,
       if (isCreate) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
@@ -78,6 +84,10 @@ class UserModel {
       totalSpent: (map['totalSpent'] is num)
           ? (map['totalSpent'] as num).toDouble()
           : double.tryParse(map['totalSpent']?.toString() ?? '0') ?? 0,
+      walletBalance: (map['walletBalance'] is num)
+          ? (map['walletBalance'] as num).toDouble()
+          : double.tryParse(map['walletBalance']?.toString() ?? '0') ?? 0,
+      kycStatus: map['kycStatus']?.toString() ?? 'PENDING',
       createdAt: parseDate(map['createdAt']),
       updatedAt: parseDate(map['updatedAt']),
     );
@@ -96,6 +106,8 @@ class UserModel {
     bool? isBlocked,
     int? totalOrders,
     double? totalSpent,
+    double? walletBalance,
+    String? kycStatus,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -112,6 +124,8 @@ class UserModel {
       isBlocked: isBlocked ?? this.isBlocked,
       totalOrders: totalOrders ?? this.totalOrders,
       totalSpent: totalSpent ?? this.totalSpent,
+      walletBalance: walletBalance ?? this.walletBalance,
+      kycStatus: kycStatus ?? this.kycStatus,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
