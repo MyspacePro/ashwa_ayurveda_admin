@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "226042461945",
+    "project_id": "ashwa-b3e20",
+    "storage_bucket": "ashwa-b3e20.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226042461945:android:2f0335cd490a483f146c28",
+        "android_client_info": {
+          "package_name": "com.ashwa.ayurved"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMJHMaTs5eBCOiXVfDTA8b3olv2bPEgfQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226042461945:android:e74c7164c1b0826a146c28",
+        "android_client_info": {
+          "package_name": "com.example.admin_control"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMJHMaTs5eBCOiXVfDTA8b3olv2bPEgfQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:226042461945:android:52da7f794e45908b146c28",
+        "android_client_info": {
+          "package_name": "com.example.ashwa_ayurved"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMJHMaTs5eBCOiXVfDTA8b3olv2bPEgfQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
