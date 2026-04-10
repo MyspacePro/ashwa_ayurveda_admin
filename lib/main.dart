@@ -11,6 +11,7 @@ import 'admin/admin_provider.dart';
 import 'providers/product_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/order_provider.dart';
+import 'providers/category_provider.dart';
 
 // SERVICES
 import 'services/firebase/firebase_service.dart';
@@ -55,6 +56,9 @@ class AdminControlApp extends StatelessWidget {
         ChangeNotifierProvider(
   create: (context) =>
       OrderProvider(context.read<FirestoreService>()),),
+        ChangeNotifierProvider(
+          create: (context) => CategoryProvider(context.read<FirestoreService>()),
+        ),
       ],
 
       child: MaterialApp(

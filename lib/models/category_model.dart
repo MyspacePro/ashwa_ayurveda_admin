@@ -3,33 +3,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Category {
   final String id;
   final String name;
-
-  /// 🖼 category image
-  final String image;
-
-  /// 🔥 for nested categories (sub-category support)
-  final String? parentId;
-
-  /// 🔥 status control
+  final String icon;
   final bool isActive;
-
-  /// 🔥 timestamp
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   const Category({
     required this.id,
     required this.name,
-    required this.image,
-    this.parentId,
+    required this.icon,
     this.isActive = true,
     this.createdAt,
     this.updatedAt,
   });
 
-  // =========================
-  // 🔄 FROM FIRESTORE
-  // =========================
   factory Category.fromMap(Map<String, dynamic> map, String docId) {
     DateTime? parseDate(dynamic value) {
       if (value is Timestamp) return value.toDate();
@@ -39,39 +26,21 @@ class Category {
 
     return Category(
       id: docId,
-      name: map['name'] ?? '',
-      image: map['image'] ?? '',
-      parentId: map['parentId'],
+      name: map['name']?.toString() ?? '',
+      icon: map['icon']?.toString() ?? map['imageUrl']?.toString() ?? '',
       isActive: map['isActive'] ?? true,
       createdAt: parseDate(map['createdAt']),
       updatedAt: parseDate(map['updatedAt']),
     );
   }
 
-  // =========================
-  // 🔄 TO FIRESTORE
-  // =========================
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isCreate = false}) {
     return {
       'name': name,
-      'image': image,
-      'parentId': parentId,
+      'icon': icon,
       'isActive': isActive,
-
-      /// 🔥 best practice timestamps
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-
+      if (isCreate) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
-
-  // =========================
-  // 🧠 HELPERS
-  // =========================
-
-  bool get isRootCategory => parentId == null;
-
-  bool get hasParent => parentId != null;
 }

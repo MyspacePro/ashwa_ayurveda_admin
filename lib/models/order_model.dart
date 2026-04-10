@@ -1,79 +1,47 @@
 import 'package:admin_control/models/cart_item_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// =========================
-/// 📦 ORDER STATUS
-/// =========================
-enum OrderStatus {
-  pending,
-  confirmed,
-  shipped,
-  delivered,
-  cancelled,
-}
+enum OrderStatus { pending, confirmed, shipped, delivered, cancelled }
 
-/// =========================
-/// 💳 PAYMENT STATUS
-/// =========================
-enum PaymentStatus {
-  pending,
-  paid,
-  failed,
-}
+enum PaymentStatus { pending, paid, failed }
 
-/// =========================
-/// 🔥 ORDER MODEL (PRODUCTION READY)
-/// =========================
 class OrderModel {
   final String id;
   final String orderId;
-
-  final List<CartItemModel> items;
-
+  final List<CartItemModel> products;
   final double subtotal;
   final double deliveryFee;
   final double discount;
   final double totalAmount;
-
   final String address;
   final String paymentMethod;
-
   final OrderStatus status;
   final PaymentStatus paymentStatus;
-
-  final String? userId;
-  final String? phone;
-  final String? paymentId;
-
+  final String userId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   const OrderModel({
     required this.id,
     required this.orderId,
-    required this.items,
-    required this.subtotal,
-    required this.deliveryFee,
-    required this.discount,
+    required this.products,
+    this.subtotal = 0,
+    this.deliveryFee = 0,
+    this.discount = 0,
     required this.totalAmount,
     required this.address,
     required this.paymentMethod,
+    required this.userId,
     this.status = OrderStatus.pending,
     this.paymentStatus = PaymentStatus.pending,
-    this.userId,
-    this.phone,
-    this.paymentId,
     this.createdAt,
     this.updatedAt,
   });
 
-  // =========================
-  // COPY WITH
-  // =========================
   OrderModel copyWith({
     String? id,
     String? orderId,
-    List<CartItemModel>? items,
+    List<CartItemModel>? products,
     double? subtotal,
     double? deliveryFee,
     double? discount,
@@ -83,15 +51,13 @@ class OrderModel {
     OrderStatus? status,
     PaymentStatus? paymentStatus,
     String? userId,
-    String? phone,
-    String? paymentId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return OrderModel(
       id: id ?? this.id,
       orderId: orderId ?? this.orderId,
-      items: items ?? this.items,
+      products: products ?? this.products,
       subtotal: subtotal ?? this.subtotal,
       deliveryFee: deliveryFee ?? this.deliveryFee,
       discount: discount ?? this.discount,
@@ -101,20 +67,16 @@ class OrderModel {
       status: status ?? this.status,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       userId: userId ?? this.userId,
-      phone: phone ?? this.phone,
-      paymentId: paymentId ?? this.paymentId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  // =========================
-  // TO MAP (FIRESTORE SAFE)
-  // =========================
-  Map<String, dynamic> toMap({bool isUpdate = false}) {
+  Map<String, dynamic> toMap({bool isCreate = false}) {
     return {
       'orderId': orderId,
-      'items': items.map((e) => e.toJson()).toList(),
+      'userId': userId,
+      'products': products.map((e) => e.toOrderMap()).toList(),
       'subtotal': subtotal,
       'deliveryFee': deliveryFee,
       'discount': discount,
@@ -123,65 +85,42 @@ class OrderModel {
       'paymentMethod': paymentMethod,
       'status': status.name,
       'paymentStatus': paymentStatus.name,
-      'userId': userId,
-      'phone': phone,
-      'paymentId': paymentId,
-
-      /// ✅ FIX: timestamps handling
-      'createdAt': isUpdate ? createdAt : FieldValue.serverTimestamp(),
+      if (isCreate) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 
-  // =========================
-  // FROM MAP (FIXED SAFE VERSION)
-  // =========================
   factory OrderModel.fromMap(Map<String, dynamic> map, String docId) {
-    final rawItems = map['items'];
+    final rawProducts = map['products'] ?? map['items'];
 
-    List<CartItemModel> itemsList = [];
-
-    if (rawItems is List) {
-      itemsList = rawItems
-          .whereType<Map>()
-          .map((e) => CartItemModel.fromJson(
-                Map<String, dynamic>.from(e),
-              ))
-          .toList();
-    }
+    final parsedProducts = (rawProducts is List)
+        ? rawProducts
+            .whereType<Map>()
+            .map((e) => CartItemModel.fromJson(Map<String, dynamic>.from(e)))
+            .toList()
+        : <CartItemModel>[];
 
     return OrderModel(
       id: docId,
-      orderId: map['orderId']?.toString() ?? '',
-
-      items: itemsList,
-
+      orderId: map['orderId']?.toString() ?? docId,
+      userId: map['userId']?.toString() ?? '',
+      products: parsedProducts,
       subtotal: _toDouble(map['subtotal']),
       deliveryFee: _toDouble(map['deliveryFee']),
       discount: _toDouble(map['discount']),
       totalAmount: _toDouble(map['totalAmount']),
-
       address: map['address']?.toString() ?? '',
       paymentMethod: map['paymentMethod']?.toString() ?? '',
-
       status: _parseStatus(map['status']),
       paymentStatus: _parsePaymentStatus(map['paymentStatus']),
-
-      userId: map['userId']?.toString(),
-      phone: map['phone']?.toString(),
-      paymentId: map['paymentId']?.toString(),
-
       createdAt: _parseDate(map['createdAt']),
       updatedAt: _parseDate(map['updatedAt']),
     );
   }
 
-  // =========================
-  // HELPERS
-  // =========================
   static double _toDouble(dynamic value) {
-    if (value == null) return 0.0;
-    return double.tryParse(value.toString()) ?? 0.0;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '0') ?? 0;
   }
 
   static DateTime? _parseDate(dynamic value) {
@@ -204,18 +143,5 @@ class OrderModel {
     );
   }
 
-  // =========================
-  // UI HELPERS
-  // =========================
-  int get totalItems => items.fold(0, (sum, e) => sum + e.quantity);
-
-  String get formattedTotal => "₹${totalAmount.toStringAsFixed(2)}";
-
-  String get statusText => status.name.toUpperCase();
-
-  String get paymentText => paymentStatus.name.toUpperCase();
-
-  bool get isDelivered => status == OrderStatus.delivered;
-  bool get isPending => status == OrderStatus.pending;
-  bool get isPaid => paymentStatus == PaymentStatus.paid;
+  int get totalItems => products.fold(0, (sum, e) => sum + e.quantity);
 }

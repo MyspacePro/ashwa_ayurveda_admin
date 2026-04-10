@@ -20,6 +20,7 @@ class _EditProductState extends State<EditProduct> {
   late TextEditingController _priceController;
   late TextEditingController _categoryController;
   late TextEditingController _stockController;
+  late TextEditingController _subCategoryController;
   late TextEditingController _descriptionController;
 
   bool _isFeatured = false;
@@ -39,6 +40,7 @@ class _EditProductState extends State<EditProduct> {
     _categoryController =
     TextEditingController(text: p.categoryId);
     _stockController = TextEditingController(text: p.stock.toString());
+    _subCategoryController = TextEditingController(text: p.subCategoryId);
     _descriptionController = TextEditingController(text: p.description);
 
     _isFeatured = p.isFeatured;
@@ -53,6 +55,7 @@ class _EditProductState extends State<EditProduct> {
       _priceController,
       _categoryController,
       _stockController,
+      _subCategoryController,
       _descriptionController,
     ]) {
       c.addListener(() {
@@ -69,6 +72,7 @@ class _EditProductState extends State<EditProduct> {
     _priceController.dispose();
     _categoryController.dispose();
     _stockController.dispose();
+    _subCategoryController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -95,6 +99,7 @@ class _EditProductState extends State<EditProduct> {
         price: double.tryParse(_priceController.text.trim()) ?? 0,
         categoryId: _categoryController.text.trim(),
         stock: int.tryParse(_stockController.text.trim()) ?? 0,
+        subCategoryId: _subCategoryController.text.trim(),
         description: _descriptionController.text.trim(),
         isFeatured: _isFeatured,
         isActive: _isActive,
@@ -149,6 +154,7 @@ class _EditProductState extends State<EditProduct> {
                   _sectionTitle("Category & Stock"),
                   _field(_categoryController, "Category"),
                   _field(_stockController, "Stock", isNumber: true),
+                  _field(_subCategoryController, "Subcategory ID"),
 
                   const SizedBox(height: 10),
 

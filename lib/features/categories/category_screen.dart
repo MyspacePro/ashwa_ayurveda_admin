@@ -1,3 +1,4 @@
+import 'package:admin_control/models/category_model.dart';
 import 'package:admin_control/services/firebase/firebase_service.dart';
 import 'package:flutter/material.dart';
 
@@ -78,7 +79,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       // =========================
       // 📡 REALTIME STREAM
       // =========================
-      body: StreamBuilder<List<Map<String, dynamic>>>(
+      body: StreamBuilder<List<Category>>(
         stream: widget.firestoreService.streamCategories(),
         builder: (context, snapshot) {
           // 🔄 Loading
@@ -118,22 +119,21 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                 child: ListTile(
                   leading: CircleAvatar(
                     child: Text(
-                      category['name'] != null &&
-                              category['name'].toString().isNotEmpty
-                          ? category['name'][0].toUpperCase()
-                          : "?",
+                      category.name.isNotEmpty
+                          ? category.name[0].toUpperCase()
+                          : '?',
                     ),
                   ),
 
                   title: Text(
-                    category['name'] ?? "No Name",
+                    category.name.isEmpty ? 'No Name' : category.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
 
                   subtitle: Text(
-                    category['description'] ?? "No description",
+                    category.icon.isEmpty ? 'No icon' : category.icon,
                   ),
 
                   trailing: _isDeleting
@@ -144,7 +144,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
                         )
                       : IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmDelete(category['id']),
+                          onPressed: () => _confirmDelete(category.id),
                         ),
                 ),
               );

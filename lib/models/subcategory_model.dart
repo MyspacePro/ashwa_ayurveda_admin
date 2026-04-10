@@ -1,27 +1,26 @@
 class SubCategory {
   final String id;
+  final String categoryId;
   final String name;
-  final String? imageUrl;
 
   SubCategory({
     required this.id,
+    required this.categoryId,
     required this.name,
-    this.imageUrl,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
+      'categoryId': categoryId,
       'name': name,
-      'imageUrl': imageUrl,
     };
   }
 
-  factory SubCategory.fromMap(Map<String, dynamic> map) {
+  factory SubCategory.fromMap(Map<String, dynamic> map, String docId) {
     return SubCategory(
-      id: map['id'] ?? '',
-      name: map['name'] ?? '',
-      imageUrl: map['imageUrl'],
+      id: docId,
+      categoryId: map['categoryId']?.toString() ?? '',
+      name: map['name']?.toString() ?? '',
     );
   }
 }

@@ -1,51 +1,32 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/category_model.dart';
+import '../models/subcategory_model.dart';
 import '../services/firebase/firebase_service.dart';
 
 class CategoryProvider with ChangeNotifier {
   final FirestoreService _firestoreService;
 
-  // =========================
-  // 🔥 CONSTRUCTOR (DI FIXED)
-  // =========================
   CategoryProvider(this._firestoreService);
 
-  // =========================
-  // 📦 STATE
-  // =========================
-
   List<Category> _categories = [];
+  List<SubCategory> _subCategories = [];
   bool _isLoading = false;
   String? _error;
 
-  StreamSubscription<List<Map<String, dynamic>>>? _subscription;
-
-  bool _isInitialized = false;
-
-  // =========================
-  // 📦 GETTERS
-  // =========================
+  StreamSubscription<List<Category>>? _categoriesSubscription;
+  StreamSubscription<List<SubCategory>>? _subCategoriesSubscription;
 
   List<Category> get categories => List.unmodifiable(_categories);
+  List<SubCategory> get subCategories => List.unmodifiable(_subCategories);
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  bool get isEmpty => _categories.isEmpty;
-  int get totalCategories => _categories.length;
-
-  Category? getById(String id) {
-    try {
-      return _categories.firstWhere((c) => c.id == id);
-    } catch (_) {
-      return null;
-    }
+  List<SubCategory> subCategoriesByCategory(String categoryId) {
+    return _subCategories.where((s) => s.categoryId == categoryId).toList();
   }
-
-  // =========================
-  // 🔄 STATE HELPERS
-  // =========================
 
   void _setLoading(bool value) {
     if (_isLoading == value) return;
@@ -65,137 +46,62 @@ class CategoryProvider with ChangeNotifier {
     }
   }
 
-  // =========================
-  // 🚀 INIT (REALTIME START)
-  // =========================
+  void listenToCategories() {
+    _categoriesSubscription?.cancel();
+    _setLoading(true);
+    _clearError();
 
-  void init() {
-    if (_isInitialized) return;
-    _isInitialized = true;
-
-    _startStream();
-  }
-
-  void _startStream() {
-  _subscription?.cancel();
-
-  _setLoading(true);
-  _clearError();
-
-  _subscription = _firestoreService.streamCategories().listen(
-    (data) {
-      _categories = data.cast<Category>();
-      _setLoading(false);
-      notifyListeners();
-    },
-    onError: (e) {
-      _setError(e.toString());
-      _setLoading(false);   },
+    _categoriesSubscription = _firestoreService.streamCategories().listen(
+      (data) {
+        _categories = data;
+        _setLoading(false);
+        notifyListeners();
+      },
+      onError: (e) {
+        _setError(e.toString());
+        _setLoading(false);
+      },
     );
   }
 
-  // =========================
-  // ➕ ADD CATEGORY
-  // =========================
+  void listenToSubCategories({String? categoryId}) {
+    _subCategoriesSubscription?.cancel();
+    _subCategoriesSubscription =
+        _firestoreService.streamSubCategories(categoryId: categoryId).listen(
+      (data) {
+        _subCategories = data;
+        notifyListeners();
+      },
+      onError: (e) {
+        _setError(e.toString());
+      },
+    );
+  }
 
   Future<void> addCategory(Category category) async {
     try {
       _clearError();
-      await _firestoreService.addCategory(category.toMap());
+      await _firestoreService.addCategory(category.toMap(isCreate: true));
     } catch (e) {
       _setError(e.toString());
       rethrow;
     }
   }
-
-  // =========================
-  // ✏️ UPDATE CATEGORY (OPTIMISTIC)
-  // =========================
 
   Future<void> updateCategory(Category category) async {
-    final index = _categories.indexWhere((c) => c.id == category.id);
-    Category? backup = index != -1 ? _categories[index] : null;
-
     try {
       _clearError();
-
-      // 🔥 Optimistic update
-      if (index != -1) {
-        _categories[index] = category;
-        notifyListeners();
-      }
-
-      await _firestoreService.updateCategory(
-        category.id,
-        category.toMap(),
-      );
+      await _firestoreService.updateCategory(category.id, category.toMap());
     } catch (e) {
-      // 🔁 rollback
-      if (index != -1 && backup != null) {
-        _categories[index] = backup;
-        notifyListeners();
-      }
-
       _setError(e.toString());
       rethrow;
     }
   }
-
-  // =========================
-  // ❌ DELETE CATEGORY (OPTIMISTIC)
-  // =========================
-
-  Future<void> deleteCategory(String id) async {
-    final index = _categories.indexWhere((c) => c.id == id);
-
-    if (index == -1) return;
-
-    final backup = _categories[index];
-
-    // 🔥 optimistic remove
-    _categories.removeAt(index);
-    notifyListeners();
-
-    try {
-      await _firestoreService.deleteCategory(id);
-    } catch (e) {
-      // 🔁 rollback
-      _categories.insert(index, backup);
-      notifyListeners();
-
-      _setError(e.toString());
-      rethrow;
-    }
-  }
-
-  // =========================
-  // 🔄 REFRESH (FORCE RECONNECT)
-  // =========================
-
-  Future<void> refresh() async {
-    _isInitialized = false;
-    _startStream();
-  }
-
-  // =========================
-  // 🧹 CLEAR
-  // =========================
-
-  void clear() {
-    _subscription?.cancel();
-    _categories = [];
-    _error = null;
-    _isLoading = false;
-    notifyListeners();
-  }
-
-  // =========================
-  // 🧹 DISPOSE
-  // =========================
 
   @override
   void dispose() {
-    _subscription?.cancel();
+    _categoriesSubscription?.cancel();
+    _subCategoriesSubscription?.cancel();
     super.dispose();
   }
 }

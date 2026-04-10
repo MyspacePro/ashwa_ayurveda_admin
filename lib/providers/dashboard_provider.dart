@@ -132,7 +132,7 @@ class DashboardProvider with ChangeNotifier {
     final Map<String, int> productCount = {};
 
     for (var order in _orders) {
-      for (var item in order.items) {
+      for (var item in order.products) {
         productCount[item.productId] =
             (productCount[item.productId] ?? 0) + item.quantity;
       }
@@ -188,6 +188,7 @@ class DashboardProvider with ChangeNotifier {
       (ordersList) {
         _orders = ordersList;
         _setLoading(false);
+        notifyListeners();
       },
       onError: (e) {
         _setError(e.toString());

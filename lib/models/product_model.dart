@@ -5,24 +5,16 @@ class ProductModel {
   final String name;
   final double price;
   final String description;
-
-  /// 🔥 MULTI IMAGE SUPPORT (FIXED)
   final List<String> images;
-
-  /// 🔥 FIRESTORE CORRECT FIELD
   final String categoryId;
-
+  final String subCategoryId;
   final double rating;
   final int totalReviews;
   final int stock;
-
   final bool isFeatured;
   final bool isActive;
-
   final DateTime? createdAt;
   final DateTime? updatedAt;
-
-  /// 🆕 OPTIONAL
   final double? originalPrice;
   final int? discountPercent;
 
@@ -33,6 +25,7 @@ class ProductModel {
     required this.description,
     required this.images,
     required this.categoryId,
+    this.subCategoryId = '',
     this.rating = 0.0,
     this.totalReviews = 0,
     this.stock = 0,
@@ -44,9 +37,6 @@ class ProductModel {
     this.discountPercent,
   });
 
-  // =========================
-  // 🔁 COPY WITH
-  // =========================
   ProductModel copyWith({
     String? id,
     String? name,
@@ -54,6 +44,7 @@ class ProductModel {
     String? description,
     List<String>? images,
     String? categoryId,
+    String? subCategoryId,
     double? rating,
     int? totalReviews,
     int? stock,
@@ -71,6 +62,7 @@ class ProductModel {
       description: description ?? this.description,
       images: images ?? this.images,
       categoryId: categoryId ?? this.categoryId,
+      subCategoryId: subCategoryId ?? this.subCategoryId,
       rating: rating ?? this.rating,
       totalReviews: totalReviews ?? this.totalReviews,
       stock: stock ?? this.stock,
@@ -83,9 +75,6 @@ class ProductModel {
     );
   }
 
-  // =========================
-  // 🔥 FROM FIRESTORE
-  // =========================
   factory ProductModel.fromMap(Map<String, dynamic> map, String docId) {
     double toDouble(dynamic value) {
       if (value is int) return value.toDouble();
@@ -114,100 +103,48 @@ class ProductModel {
 
     return ProductModel(
       id: docId,
-      name: map['name'] ?? "",
+      name: map['name'] ?? '',
       price: toDouble(map['price']),
-      description: map['description'] ?? "",
-
-      /// 🔥 FIXED: images array
+      description: map['description'] ?? '',
       images: toStringList(map['images']),
-
-      /// 🔥 FIXED: categoryId
-      categoryId: map['categoryId'] ?? "",
-
+      categoryId: map['categoryId'] ?? '',
+      subCategoryId: map['subCategoryId'] ?? '',
       rating: toDouble(map['rating']),
       totalReviews: toInt(map['totalReviews']),
       stock: toInt(map['stock']),
       isFeatured: map['isFeatured'] ?? false,
       isActive: map['isActive'] ?? true,
-
       createdAt: toDate(map['createdAt']),
       updatedAt: toDate(map['updatedAt']),
-
-      originalPrice: map['originalPrice'] != null
-          ? toDouble(map['originalPrice'])
-          : null,
-
-      discountPercent: map['discountPercent'] != null
-          ? toInt(map['discountPercent'])
-          : null,
+      originalPrice:
+          map['originalPrice'] != null ? toDouble(map['originalPrice']) : null,
+      discountPercent:
+          map['discountPercent'] != null ? toInt(map['discountPercent']) : null,
     );
   }
 
-  // =========================
-  // 🔥 TO FIRESTORE
-  // =========================
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isCreate = false}) {
     return {
       'name': name,
       'price': price,
       'description': description,
-
-      /// 🔥 FIXED
       'images': images,
-
-      /// 🔥 FIXED
       'categoryId': categoryId,
-
+      'subCategoryId': subCategoryId,
       'rating': rating,
       'totalReviews': totalReviews,
       'stock': stock,
       'isFeatured': isFeatured,
       'isActive': isActive,
-
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-
+      if (isCreate)
+        'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
-
       'originalPrice': originalPrice,
       'discountPercent': discountPercent,
     };
   }
 
-  // =========================
-  // 🧠 HELPERS
-  // =========================
-
   bool get inStock => stock > 0;
-
   bool get lowStock => stock > 0 && stock <= 5;
-
-  String get primaryImage =>
-      images.isNotEmpty ? images.first : "";
-
-  String get formattedPrice => "₹${price.toStringAsFixed(2)}";
-
-  bool get hasDiscount =>
-      originalPrice != null && originalPrice! > price;
-
-  double get discountValue {
-    if (originalPrice == null || originalPrice! <= price) return 0;
-    return originalPrice! - price;
-  }
-
-  int get discount {
-    if (discountPercent != null) return discountPercent!;
-    if (!hasDiscount) return 0;
-
-    return (((originalPrice! - price) / originalPrice!) * 100).round();
-  }
-
-  double get safeRating => rating.clamp(0, 5);
-
-  String get stockStatus {
-    if (stock <= 0) return "Out of Stock";
-    if (stock <= 5) return "Only $stock left";
-    return "In Stock";
-  }
+  String get primaryImage => images.isNotEmpty ? images.first : '';
 }

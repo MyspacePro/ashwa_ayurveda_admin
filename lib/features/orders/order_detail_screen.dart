@@ -28,13 +28,13 @@ class OrderDetailScreen extends StatelessWidget {
                 children: [
                   _sectionTitle("Order Info"),
                   _infoTile("Order ID", order.orderId),
-                  _infoTile("User ID", order.userId ?? "N/A"),
+                  _infoTile("User ID", order.userId),
                   _infoTile("Date", _formatDate(order.createdAt)),
 
                   const SizedBox(height: 20),
 
                   _sectionTitle("Items"),
-                  ...order.items.map((item) => _itemTile(item)).toList(),
+                  ...order.products.map((item) => _itemTile(item)).toList(),
 
                   const SizedBox(height: 20),
 

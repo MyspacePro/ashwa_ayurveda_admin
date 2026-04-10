@@ -138,6 +138,23 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
+
+  Future<void> updateStock({
+    required String productId,
+    required int newStock,
+  }) async {
+    try {
+      _clearError();
+      await _firestoreService.updateProductStock(
+        productId: productId,
+        newStock: newStock,
+      );
+    } catch (e) {
+      _setError(e.toString());
+      rethrow;
+    }
+  }
+
   // =========================
   // 🔄 REFRESH (FORCE RECONNECT)
   // =========================

@@ -6,18 +6,13 @@ class UserModel {
   final String email;
   final String phone;
   final String? profileImage;
-
   final List<String> addressList;
   final List<String> wishlist;
-
-  /// 🔥 ROLE SYSTEM (SCALABLE)
-  final String role; // user / admin / super_admin
-
-  /// 🔥 STATUS FLAGS
+  final String role;
   final bool isActive;
   final bool isBlocked;
-
-  /// 🔥 TIMESTAMPS
+  final int totalOrders;
+  final double totalSpent;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -29,20 +24,17 @@ class UserModel {
     this.profileImage,
     this.addressList = const [],
     this.wishlist = const [],
-    this.role = "user",
+    this.role = 'user',
     this.isActive = true,
     this.isBlocked = false,
+    this.totalOrders = 0,
+    this.totalSpent = 0,
     this.createdAt,
     this.updatedAt,
   });
 
-  // =========================
-  // 🔄 TO FIRESTORE MAP
-  // =========================
-
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap({bool isCreate = false}) {
     return {
-      'id': id,
       'name': name,
       'email': email,
       'phone': phone,
@@ -52,32 +44,23 @@ class UserModel {
       'role': role,
       'isActive': isActive,
       'isBlocked': isBlocked,
-
-      /// 🔥 SERVER TIMESTAMPS (BEST PRACTICE)
-      'createdAt': createdAt != null
-          ? Timestamp.fromDate(createdAt!)
-          : FieldValue.serverTimestamp(),
-
+      'totalOrders': totalOrders,
+      'totalSpent': totalSpent,
+      if (isCreate) 'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 
-  // =========================
-  // 🔄 FROM FIRESTORE
-  // =========================
-
   factory UserModel.fromMap(Map<String, dynamic> map, String docId) {
-    DateTime? _parseDate(dynamic value) {
+    DateTime? parseDate(dynamic value) {
       if (value is Timestamp) return value.toDate();
       if (value is String) return DateTime.tryParse(value);
       return null;
     }
 
-    List<String> _parseList(dynamic value) {
-      if (value is List) {
-        return value.map((e) => e.toString()).toList();
-      }
-      return [];
+    List<String> parseList(dynamic value) {
+      if (value is List) return value.map((e) => e.toString()).toList();
+      return const [];
     }
 
     return UserModel(
@@ -86,22 +69,19 @@ class UserModel {
       email: map['email']?.toString() ?? '',
       phone: map['phone']?.toString() ?? '',
       profileImage: map['profileImage']?.toString(),
-
-      addressList: _parseList(map['addressList']),
-      wishlist: _parseList(map['wishlist']),
-
-      role: map['role']?.toString() ?? "user",
+      addressList: parseList(map['addressList']),
+      wishlist: parseList(map['wishlist']),
+      role: map['role']?.toString() ?? 'user',
       isActive: map['isActive'] ?? true,
       isBlocked: map['isBlocked'] ?? false,
-
-      createdAt: _parseDate(map['createdAt']),
-      updatedAt: _parseDate(map['updatedAt']),
+      totalOrders: (map['totalOrders'] ?? 0) as int,
+      totalSpent: (map['totalSpent'] is num)
+          ? (map['totalSpent'] as num).toDouble()
+          : double.tryParse(map['totalSpent']?.toString() ?? '0') ?? 0,
+      createdAt: parseDate(map['createdAt']),
+      updatedAt: parseDate(map['updatedAt']),
     );
   }
-
-  // =========================
-  // 🔁 COPY WITH
-  // =========================
 
   UserModel copyWith({
     String? id,
@@ -114,6 +94,8 @@ class UserModel {
     String? role,
     bool? isActive,
     bool? isBlocked,
+    int? totalOrders,
+    double? totalSpent,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -128,30 +110,13 @@ class UserModel {
       role: role ?? this.role,
       isActive: isActive ?? this.isActive,
       isBlocked: isBlocked ?? this.isBlocked,
+      totalOrders: totalOrders ?? this.totalOrders,
+      totalSpent: totalSpent ?? this.totalSpent,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  // =========================
-  // 🧠 HELPERS
-  // =========================
-
-  bool get isAdmin => role == "admin" || role == "super_admin";
-
-  bool get isUser => role == "user";
-
+  bool get isAdmin => role == 'admin' || role == 'super_admin';
   bool get canLogin => isActive && !isBlocked;
-
-  // =========================
-  // ⚖️ EQUALITY (IMPORTANT)
-  // =========================
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is UserModel && runtimeType == other.runtimeType && id == other.id;
-
-  @override
-  int get hashCode => id.hashCode;
 }
