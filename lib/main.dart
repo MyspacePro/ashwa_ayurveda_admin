@@ -12,9 +12,11 @@ import 'providers/product_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/category_provider.dart';
+import 'providers/coupon_provider.dart';
 
 // SERVICES
 import 'services/firebase/firebase_service.dart';
+import 'services/firebase/coupon_service.dart';
 
 // ROUTES
 import 'admin/app_routes.dart';
@@ -30,16 +32,19 @@ Future<void> main() async {
   );
 
   final firestoreService = FirestoreService();
+  final couponService = CouponService();
 
-  runApp(AdminControlApp(firestoreService: firestoreService));
+  runApp(AdminControlApp(firestoreService: firestoreService, couponService: couponService));
 }
 
 class AdminControlApp extends StatelessWidget {
   final FirestoreService firestoreService;
+  final CouponService couponService;
 
   const AdminControlApp({
     super.key,
     required this.firestoreService,
+    required this.couponService,
   });
 
   @override
@@ -59,6 +64,7 @@ class AdminControlApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (context) => CategoryProvider(context.read<FirestoreService>()),
         ),
+        ChangeNotifierProvider(create: (_) => CouponProvider(couponService)),
       ],
 
       child: MaterialApp(

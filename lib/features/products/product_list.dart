@@ -43,7 +43,7 @@ class _ProductListState extends State<ProductList> {
               tooltip: "Add Product",
               icon: const Icon(Icons.add),
               onPressed: () {
-                Navigator.pushNamed(context, '/addProduct');
+                Navigator.pushNamed(context, '/add-product');
               },
             ),
         ],
@@ -105,7 +105,7 @@ class _ProductListState extends State<ProductList> {
                 icon: const Icon(Icons.add),
                 label: const Text("Add Product"),
                 onPressed: () {
-                  Navigator.pushNamed(context, '/addProduct');
+                  Navigator.pushNamed(context, '/add-product');
                 },
               ),
           ],

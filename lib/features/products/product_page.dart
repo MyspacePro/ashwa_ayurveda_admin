@@ -44,7 +44,7 @@ class _ProductScreenState extends State<ProductScreen> {
       floatingActionButton: isAdmin
           ? FloatingActionButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/addProduct');
+                Navigator.pushNamed(context, '/add-product');
               },
               child: const Icon(Icons.add),
             )
@@ -111,7 +111,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 icon: const Icon(Icons.add),
                 label: const Text("Add Product"),
                 onPressed: () {
-                  Navigator.pushNamed(context, '/addProduct');
+                  Navigator.pushNamed(context, '/add-product');
                 },
               ),
           ],

@@ -58,7 +58,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     final adminProvider =
         Provider.of<AdminProvider>(context, listen: false);
 
-    adminProvider.setRole(UserRole.admin);
+    adminProvider.setRole(role == "admin" ? UserRole.admin : UserRole.staff);
 
     // =========================
     // 🚀 NAVIGATION
@@ -68,7 +68,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     if (role == "admin") {
       Navigator.pushReplacementNamed(context, '/dashboard');
     } else {
-      Navigator.pushReplacementNamed(context, '/staffDashboard');
+      Navigator.pushReplacementNamed(context, '/staff-dashboard');
     }
 
     setState(() => isLoading = false);
