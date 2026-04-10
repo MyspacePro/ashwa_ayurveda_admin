@@ -13,6 +13,8 @@ import 'providers/user_provider.dart';
 import 'providers/order_provider.dart';
 import 'providers/category_provider.dart';
 import 'providers/coupon_provider.dart';
+import 'providers/delivery_provider.dart';
+import 'providers/staff_provider.dart';
 
 // SERVICES
 import 'services/firebase/firebase_service.dart';
@@ -65,6 +67,8 @@ class AdminControlApp extends StatelessWidget {
           create: (context) => CategoryProvider(context.read<FirestoreService>()),
         ),
         ChangeNotifierProvider(create: (_) => CouponProvider(couponService)),
+        ChangeNotifierProvider(create: (_) => DeliveryProvider(firestoreService)),
+        ChangeNotifierProvider(create: (_) => StaffProvider(firestoreService)),
       ],
 
       child: MaterialApp(

@@ -398,3 +398,28 @@ Create composite indexes based on expected app queries:
   - `price >= 0`, `discountPrice >= 0`, `stock >= 0`, `rating ∈ [0, 5]`
 - Prevent clients from directly editing sensitive fields (`walletBalance`, `paymentStatus`, `orderStatus`) unless through trusted backend/admin flows.
 
+
+## Admin Panel Extensions (2026 update)
+
+### orders/{orderId}
+Added delivery tracking fields:
+- `deliveryStatus`: `PENDING | SHIPPED | OUT_FOR_DELIVERY | DELIVERED`
+- `deliveryPartner`: string
+- `trackingId`: string
+- `updatedAt`: timestamp
+
+Optional logs:
+- `orders/{orderId}/delivery_logs/{logId}` with delivery snapshots and `createdAt`.
+
+### staff/{staffId}
+- `name`: string
+- `email`: string
+- `role`: `ADMIN | MANAGER | DELIVERY`
+- `permissions`: string[]
+- `createdAt`: timestamp
+- `updatedAt`: timestamp
+
+### users/{userId}
+Added admin fields:
+- `walletBalance`: number
+- `kycStatus`: `PENDING | VERIFIED | REJECTED`
