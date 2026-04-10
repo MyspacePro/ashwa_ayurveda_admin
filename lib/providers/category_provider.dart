@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../models/category_model.dart';
+import '../models/category_model.dart' as category_model;
 import '../models/subcategory_model.dart';
 import '../services/firebase/firebase_service.dart';
 
@@ -11,15 +11,15 @@ class CategoryProvider with ChangeNotifier {
 
   CategoryProvider(this._firestoreService);
 
-  List<Category> _categories = [];
+  List<category_model.Category> _categories = [];
   List<SubCategory> _subCategories = [];
   bool _isLoading = false;
   String? _error;
 
-  StreamSubscription<List<Category>>? _categoriesSubscription;
+  StreamSubscription<List<category_model.Category>>? _categoriesSubscription;
   StreamSubscription<List<SubCategory>>? _subCategoriesSubscription;
 
-  List<Category> get categories => List.unmodifiable(_categories);
+  List<category_model.Category> get categories => List.unmodifiable(_categories);
   List<SubCategory> get subCategories => List.unmodifiable(_subCategories);
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -78,7 +78,7 @@ class CategoryProvider with ChangeNotifier {
     );
   }
 
-  Future<void> addCategory(Category category) async {
+  Future<void> addCategory(category_model.Category category) async {
     try {
       _clearError();
       await _firestoreService.addCategory(category.toMap(isCreate: true));
@@ -88,7 +88,7 @@ class CategoryProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updateCategory(Category category) async {
+  Future<void> updateCategory(category_model.Category category) async {
     try {
       _clearError();
       await _firestoreService.updateCategory(category.id, category.toMap());

@@ -1,10 +1,10 @@
-import 'package:admin_control/models/category_model.dart';
+import 'package:admin_control/models/category_model.dart' as category_model;
 import 'package:admin_control/models/order_model.dart';
 import 'package:admin_control/models/product_model.dart';
 import 'package:admin_control/models/subcategory_model.dart';
 import 'package:admin_control/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 
 class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -111,11 +111,19 @@ class FirestoreService {
     }
   }
 
-  Stream<List<Category>> streamCategories() {
+  Stream<List<category_model.Category>> streamCategories() {
     return categories
         .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snapshot) => _mapList(snapshot, Category.fromMap));
+        .map(
+          (QuerySnapshot<Map<String, dynamic>> snapshot) =>
+              snapshot.docs
+                  .map(
+                    (QueryDocumentSnapshot<Map<String, dynamic>> doc) =>
+                        category_model.Category.fromMap(doc.data(), doc.id),
+                  )
+                  .toList(),
+        );
   }
 
   Stream<List<SubCategory>> streamSubCategories({String? categoryId}) {

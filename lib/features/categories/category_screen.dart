@@ -1,4 +1,4 @@
-import 'package:admin_control/models/category_model.dart';
+import 'package:admin_control/models/category_model.dart' as category_model;
 import 'package:admin_control/services/firebase/firebase_service.dart';
 import 'package:flutter/material.dart';
 
@@ -79,7 +79,7 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       // =========================
       // 📡 REALTIME STREAM
       // =========================
-      body: StreamBuilder<List<Category>>(
+      body: StreamBuilder<List<category_model.Category>>(
         stream: widget.firestoreService.streamCategories(),
         builder: (context, snapshot) {
           // 🔄 Loading

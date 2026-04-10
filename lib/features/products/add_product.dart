@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:admin_control/models/category_model.dart';
+import 'package:admin_control/models/category_model.dart' as category_model;
 import 'package:admin_control/models/product_model.dart';
 import 'package:admin_control/models/subcategory_model.dart';
 import 'package:admin_control/providers/category_provider.dart';
@@ -148,7 +148,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                   items: categories
                       .map(
-                        (Category c) => DropdownMenuItem<String>(
+                        (category_model.Category c) => DropdownMenuItem<String>(
                           value: c.id,
                           child: Text(c.name),
                         ),

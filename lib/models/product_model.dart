@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class ProductModel {
   final String id;
@@ -147,4 +148,38 @@ class ProductModel {
   bool get inStock => stock > 0;
   bool get lowStock => stock > 0 && stock <= 5;
   String get primaryImage => images.isNotEmpty ? images.first : '';
+  double get discountPrice => price;
+
+  bool get hasDiscount {
+    final double basePrice = originalPrice ?? price;
+    return discountPrice < basePrice;
+  }
+
+  int get discount {
+    if (discountPercent != null && discountPercent! >= 0) {
+      return discountPercent!;
+    }
+    final double basePrice = originalPrice ?? price;
+    if (basePrice <= 0 || !hasDiscount) {
+      return 0;
+    }
+    return (((basePrice - discountPrice) / basePrice) * 100).round();
+  }
+
+  String get formattedPrice {
+    final NumberFormat formatter = NumberFormat.currency(
+      locale: 'en_IN',
+      symbol: '₹',
+      decimalDigits: discountPrice % 1 == 0 ? 0 : 2,
+    );
+    return formatter.format(discountPrice);
+  }
+
+  double get safeRating => rating.clamp(0.0, 5.0).toDouble();
+
+  String get stockStatus {
+    if (stock <= 0) return 'Out of stock';
+    if (lowStock) return 'Low stock';
+    return 'In stock';
+  }
 }
