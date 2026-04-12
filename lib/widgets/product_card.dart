@@ -1,4 +1,5 @@
-import 'package:admin_control/features/products/edit_product.dart';
+import 'package:admin_control/core/routes/app_routes.dart';
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:admin_control/models/product_model.dart';
 import 'package:admin_control/providers/category_provider.dart';
 import 'package:flutter/material.dart';
@@ -282,11 +283,9 @@ class _ProductCardState extends State<ProductCard> {
   // NAVIGATION
   // =========================
   void _goToEdit(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EditProduct(product: widget.product),
-      ),
+    NavigationService.navigateTo(
+      AppRoutes.editProduct,
+      arguments: widget.product,
     );
   }
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:admin_control/services/firebase/firebase_service.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -131,7 +132,7 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
         ),
       );
 
-      Navigator.pop(context);
+      NavigationService.goBack();
     } catch (e) {
       if (!mounted) return;
 
@@ -175,6 +176,7 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title:
             Text(isEdit ? "Edit Category" : "Add Category"),
       ),

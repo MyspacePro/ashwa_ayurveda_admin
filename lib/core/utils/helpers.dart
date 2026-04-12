@@ -1,3 +1,4 @@
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -6,22 +7,28 @@ class Helpers {
   // NAVIGATION HELPERS
   // =========================
 
-  static void push(BuildContext context, Widget page) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => page),
+  static Future<T?>? push<T extends Object?>(
+    String routeName, {
+    Object? arguments,
+  }) {
+    return NavigationService.navigateTo<T>(
+      routeName,
+      arguments: arguments,
     );
   }
 
-  static void pushReplace(BuildContext context, Widget page) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => page),
+  static Future<T?>? pushReplace<T extends Object?, TO extends Object?>(
+    String routeName, {
+    Object? arguments,
+  }) {
+    return NavigationService.replaceWith<T, TO>(
+      routeName,
+      arguments: arguments,
     );
   }
 
-  static void pop(BuildContext context) {
-    Navigator.pop(context);
+  static void pop<T extends Object?>([T? result]) {
+    NavigationService.goBack(result);
   }
 
   // =========================
@@ -85,7 +92,7 @@ class Helpers {
   }
 
   static void hideLoadingDialog(BuildContext context) {
-    Navigator.pop(context);
+    NavigationService.goBack();
   }
 
   // =========================

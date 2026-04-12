@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/routes/navigation_service.dart';
 import '../../providers/product_provider.dart';
 
 class AddProductScreen extends StatefulWidget {
@@ -111,7 +112,7 @@ provider.init();
       if (!mounted) return;
 
       _snack('Product added successfully');
-      Navigator.pop(context);
+      NavigationService.goBack();
     } catch (e) {
       _snack('Failed to add product');
     } finally {
@@ -148,6 +149,10 @@ provider.init();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F1A),
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: const Text('Add Product'),
+      ),
       body: Stack(
         children: [
           _buildForm(categories, subCategories),
@@ -184,6 +189,7 @@ provider.init();
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox.shrink(),
                 const Text(
                   "Add Product",
                   style: TextStyle(
@@ -297,7 +303,7 @@ provider.init();
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: _isLoading ? null : () => Navigator.pop(context),
+                      onPressed: _isLoading ? null : NavigationService.goBack,
                       child: const Text("Cancel"),
                     ),
                     const SizedBox(width: 10),

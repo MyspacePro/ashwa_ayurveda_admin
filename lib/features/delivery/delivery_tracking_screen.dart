@@ -28,6 +28,7 @@ class _DeliveryTrackingScreenState
 
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: const Text("Delivery Tracking"),
       ),
       body: _buildBody(provider),

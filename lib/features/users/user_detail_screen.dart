@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:admin_control/core/routes/app_routes.dart';
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:admin_control/models/user_model.dart';
 import 'package:admin_control/providers/user_provider.dart';
 
@@ -29,12 +31,16 @@ class UserDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: Text(user.name),
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // 👉 open edit screen (future)
+              NavigationService.navigateTo(
+                AppRoutes.editUser,
+                arguments: user,
+              );
             },
           ),
         ],

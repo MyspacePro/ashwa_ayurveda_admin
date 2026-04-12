@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/routes/navigation_service.dart';
 import '../../providers/product_provider.dart';
 
 class EditProduct extends StatefulWidget {
@@ -123,7 +124,7 @@ provider.init();
       if (!mounted) return;
 
       _snack("Product updated");
-      Navigator.pop(context);
+      NavigationService.goBack();
     } catch (e) {
       _snack("Update failed");
     } finally {
@@ -157,6 +158,10 @@ provider.init();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F1A),
+      appBar: AppBar(
+        leading: const BackButton(),
+        title: const Text('Edit Product'),
+      ),
       body: Stack(
         children: [
           _buildForm(
@@ -191,6 +196,7 @@ provider.init();
             key: _formKey,
             child: Column(
               children: [
+                const SizedBox.shrink(),
                 const Text("Edit Product",
                     style: TextStyle(color: Colors.white, fontSize: 22)),
 

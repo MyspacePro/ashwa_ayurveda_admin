@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:admin_control/admin/admin_provider.dart';
+import 'package:admin_control/core/routes/app_routes.dart';
+import 'package:admin_control/core/routes/navigation_service.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -66,9 +68,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     if (!mounted) return;
 
     if (role == "admin") {
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      NavigationService.replaceWith(AppRoutes.adminDashboard);
     } else {
-      Navigator.pushReplacementNamed(context, '/staff-dashboard');
+      NavigationService.replaceWith(AppRoutes.staffDashboard);
     }
 
     setState(() => isLoading = false);

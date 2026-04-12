@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/user_model.dart';
+import '../../core/routes/navigation_service.dart';
 import '../../providers/user_provider.dart';
 
 class UserFormScreen extends StatefulWidget {
@@ -53,13 +54,13 @@ class _UserFormScreenState extends State<UserFormScreen> {
         walletBalance: double.tryParse(_wallet.text.trim()) ?? 0,kycStatus: _kyc,
       ));
     }
-    if (mounted) Navigator.pop(context, true);
+    if (mounted) NavigationService.goBack(true);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(isEdit ? 'Edit User' : 'Add User')),
+      appBar: AppBar(leading: const BackButton(), title: Text(isEdit ? 'Edit User' : 'Add User')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(

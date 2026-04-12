@@ -3,6 +3,8 @@ import 'package:admin_control/models/product_model.dart';
 import 'package:admin_control/widgets/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/routes/app_routes.dart';
+import '../../core/routes/navigation_service.dart';
 import '../../providers/product_provider.dart';
 
 class ProductList extends StatefulWidget {
@@ -52,7 +54,7 @@ class _ProductListState extends State<ProductList> {
   // 🔥 NAVIGATION
   // =========================
   void _goToAddProduct(BuildContext context) {
-    Navigator.pushNamed(context, '/add-product');
+    NavigationService.navigateTo(AppRoutes.addProduct);
   }
 
   // =========================
@@ -172,7 +174,7 @@ class _EmptyState extends StatelessWidget {
                 icon: const Icon(Icons.add),
                 label: const Text("Add Product"),
                 onPressed: () {
-                  Navigator.pushNamed(context, '/add-product');
+                  NavigationService.navigateTo(AppRoutes.addProduct);
                 },
               ),
           ],

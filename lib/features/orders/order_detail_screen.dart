@@ -17,6 +17,7 @@ class OrderDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: const Text("Order Details"),
       ),
       body: orderProvider.isLoading

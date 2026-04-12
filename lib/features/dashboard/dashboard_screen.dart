@@ -1,4 +1,5 @@
 import 'package:admin_control/core/routes/app_routes.dart';
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:provider/provider.dart';
@@ -106,11 +107,15 @@ Widget _content(bool isMobile) {
       case AdminMenuItem.dashboard:
         return AppRoutes.adminDashboard;
       case AdminMenuItem.userList:
+        return AppRoutes.userList;
       case AdminMenuItem.addUser:
+        return AppRoutes.addUser;
       case AdminMenuItem.editUser:
-        return AppRoutes.editUser;
+        return AppRoutes.userList;
       case AdminMenuItem.allProducts:
+        return AppRoutes.productList;
       case AdminMenuItem.addProduct:
+        return AppRoutes.addProduct;
       case AdminMenuItem.editProduct:
         return AppRoutes.productList;
       case AdminMenuItem.allCategories:
@@ -128,8 +133,9 @@ Widget _content(bool isMobile) {
       case AdminMenuItem.support:
         return AppRoutes.tickets;
       case AdminMenuItem.deliveryTracking:
+        return AppRoutes.deliveryTracking;
       case AdminMenuItem.settings:
-        return AppRoutes.Seedone;
+        return AppRoutes.settings;
     }
   }
 
@@ -247,7 +253,7 @@ if (items.length == 1) {
            onTap: () {
             setState(() => _active = item);
             final route = _routeForMenu(item);
-            Navigator.pushReplacementNamed(context, route);
+            NavigationService.replaceWith(route);
           },
         ),
       ),

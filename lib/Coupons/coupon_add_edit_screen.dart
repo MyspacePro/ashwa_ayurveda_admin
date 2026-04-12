@@ -1,3 +1,4 @@
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/coupon_model.dart';
@@ -108,7 +109,7 @@ class _AddEditCouponScreenState extends State<AddEditCouponScreen> {
       if (!mounted) return;
 
       _snack("Coupon saved");
-      Navigator.pop(context);
+      NavigationService.goBack();
     } catch (e) {
       _snack("Error: $e");
     } finally {
@@ -128,6 +129,7 @@ class _AddEditCouponScreenState extends State<AddEditCouponScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: const BackButton(),
         title: Text(isEdit ? "Edit Coupon" : "Add Coupon"),
       ),
       body: SingleChildScrollView(

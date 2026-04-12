@@ -22,6 +22,8 @@ import 'services/firebase/coupon_service.dart';
 
 // ROUTES
 import 'core/routes/app_routes.dart';
+import 'core/routes/navigation_service.dart';
+import 'core/routes/route_generator.dart';
 
 // FIREBASE OPTIONS
 import 'firebase_options.dart';
@@ -120,14 +122,9 @@ class AdminControlApp extends StatelessWidget {
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.dark,
 
-        /// ⚠️ CURRENT ROUTING (OK BUT NOT BEST)
+        navigatorKey: NavigationService.navigatorKey,
         initialRoute: AppRoutes.adminLogin,
-        routes: AppRoutes.routes,
-      
-
-        /// 🚀 RECOMMENDED UPGRADE (next step)
-        /// Replace above 3 lines with:
-        /// onGenerateRoute: AppRouter.generateRoute,
+        onGenerateRoute: RouteGenerator.generateRoute,
       ),
     );
   }

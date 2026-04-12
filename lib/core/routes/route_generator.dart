@@ -1,149 +1,163 @@
-import 'package:flutter/material.dart';
-import 'package:admin_control/core/routes/app_routes.dart';
+import 'package:admin_control/Coupons/coupon_add_edit_screen.dart';
+import 'package:admin_control/Coupons/coupon_list_screen.dart';
+import 'package:admin_control/Support/setting.dart';
+import 'package:admin_control/Support/ticket_list_screen.dart';
+import 'package:admin_control/features/Notifications/notification_list_screen.dart';
+import 'package:admin_control/features/auth/admin_login_screen.dart';
+import 'package:admin_control/features/banners/banner_list_screen.dart';
+import 'package:admin_control/features/categories/category_add_edit_screen.dart';
+import 'package:admin_control/features/categories/category_screen.dart';
+import 'package:admin_control/features/dashboard/dashboard_screen.dart';
+import 'package:admin_control/features/dashboard/staff_dashboard.dart';
+import 'package:admin_control/features/delivery/delivery_tracking_screen.dart';
+import 'package:admin_control/features/orders/order_detail_screen.dart';
+import 'package:admin_control/features/orders/order_screen.dart';
+import 'package:admin_control/features/products/add_product.dart';
+import 'package:admin_control/features/products/edit_product.dart';
+import 'package:admin_control/features/products/product_list.dart';
+import 'package:admin_control/features/users/user_detail_screen.dart';
+import 'package:admin_control/features/users/user_form_screen.dart';
+import 'package:admin_control/features/users/user_list.dart';
+import 'package:admin_control/models/coupon_model.dart';
+import 'package:admin_control/models/order_model.dart';
 import 'package:admin_control/models/product_model.dart';
+import 'package:admin_control/models/user_model.dart';
+import 'package:flutter/material.dart';
 
-// AUTH & DASHBOARD
-import '../../features/auth/admin_login_screen.dart';
-import '../../features/dashboard/dashboard_screen.dart';
-import '../../features/dashboard/staff_dashboard.dart';
+import 'app_routes.dart';
 
-// USERS
-import '../../features/users/user_list.dart';
-import '../../features/users/user_detail_screen.dart';
-import '../../features/users/user_form_screen.dart';
+class RouteGenerator {
+  RouteGenerator._();
 
-// PRODUCTS
-import '../../features/products/product_list.dart';
-import '../../features/products/add_product.dart';
-import '../../features/products/edit_product.dart';
-
-// CATEGORIES
-import '../../features/categories/category_screen.dart';
-import '../../features/categories/category_add_edit_screen.dart';
-
-// ORDERS
-import '../../features/orders/order_screen.dart';
-
-// OTHERS
-import '../../Coupons/coupon_list_screen.dart';
-import '../../features/banners/banner_list_screen.dart';
-import '../../features/Notifications/notification_list_screen.dart';
-import '../../Support/ticket_list_screen.dart';
-
-// EXTRA
-import '../../features/delivery/delivery_tracking_screen.dart';
-
-class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
+    debugPrint(
+      '[RouteGenerator] route: ${settings.name}, argsType: ${settings.arguments?.runtimeType}',
+    );
+
     switch (settings.name) {
-
-      // =========================
-      // AUTH
-      // =========================
       case AppRoutes.adminLogin:
-        return _build(const AdminLoginScreen());
-
-      // =========================
-      // DASHBOARD
-      // =========================
+        return _fadeRoute(const AdminLoginScreen(), settings);
       case AppRoutes.adminDashboard:
-        return _build(const DashboardHome());
-
+        return _fadeRoute(const DashboardHome(), settings);
       case AppRoutes.staffDashboard:
-        return _build(const StaffDashboard());
+        return _fadeRoute(const StaffDashboard(), settings);
 
-      // =========================
-      // USERS
-      // =========================
       case AppRoutes.userList:
-        return _build(const UserList());
-
+        return _fadeRoute(const UserList(), settings);
       case AppRoutes.addUser:
-        return _build(const UserDetailScreen(userId: '',));
-
+        return _fadeRoute(const UserFormScreen(), settings);
       case AppRoutes.editUser:
-        return _build(const UserFormScreen());
+        final args = settings.arguments;
+        if (args is UserModel) {
+          return _fadeRoute(UserFormScreen(user: args), settings);
+        }
+        return _errorRoute(
+          settings,
+          'Invalid user argument for edit screen.',
+        );
+      case AppRoutes.userDetail:
+        final args = settings.arguments;
+        if (args is String && args.trim().isNotEmpty) {
+          return _fadeRoute(UserDetailScreen(userId: args), settings);
+        }
+        return _errorRoute(
+          settings,
+          'User detail requires a valid userId (String).',
+        );
 
-      // =========================
-      // PRODUCTS
-      // =========================
       case AppRoutes.productList:
-        return _build(const ProductList());
-
+        return _fadeRoute(const ProductList(), settings);
       case AppRoutes.addProduct:
-        return _build(const AddProductScreen());
-
+        return _fadeRoute(const AddProductScreen(), settings);
       case AppRoutes.editProduct:
         final args = settings.arguments;
-
         if (args is ProductModel) {
-          return _build(EditProduct(product: args));
+          return _fadeRoute(EditProduct(product: args), settings);
         }
+        return _errorRoute(
+          settings,
+          'Invalid product argument for edit screen.',
+        );
 
-        return _errorRoute("Invalid Product Data");
-
-      // =========================
-      // CATEGORIES
-      // =========================
       case AppRoutes.categories:
-        return _build(const CategoryListScreen());
-
+        return _fadeRoute(const CategoryListScreen(), settings);
       case AppRoutes.addCategory:
-        return _build(const CategoryAddEditScreen());
-
       case AppRoutes.addSubcategory:
-        return _build(const CategoryAddEditScreen());
+        return _fadeRoute(const CategoryAddEditScreen(), settings);
 
-      // =========================
-      // ORDERS
-      // =========================
       case AppRoutes.orders:
-        return _build(const OrderScreen());
+        return _fadeRoute(const OrderScreen(), settings);
+      case AppRoutes.orderDetail:
+        final args = settings.arguments;
+        if (args is OrderModel) {
+          return _fadeRoute(OrderDetailScreen(order: args), settings);
+        }
+        return _errorRoute(
+          settings,
+          'Order detail requires an OrderModel argument.',
+        );
 
-      // =========================
-      // OTHERS
-      // =========================
       case AppRoutes.coupons:
-        return _build(const CouponListScreen());
+        return _fadeRoute(const CouponListScreen(), settings);
+      case AppRoutes.couponForm:
+        final args = settings.arguments;
+        if (args == null || args is CouponModel) {
+          return _fadeRoute(AddEditCouponScreen(coupon: args as CouponModel?), settings);
+        }
+        return _errorRoute(
+          settings,
+          'Coupon form expects CouponModel? argument.',
+        );
 
       case AppRoutes.banners:
-        return _build(const BannerListScreen());
-
+        return _fadeRoute(const BannerListScreen(), settings);
       case AppRoutes.notifications:
-        return _build(const NotificationListScreen());
-
+        return _fadeRoute(const NotificationListScreen(), settings);
       case AppRoutes.tickets:
-        return _build(const TicketListScreen());
+        return _fadeRoute(const TicketListScreen(), settings);
 
-      // =========================
-      // DELIVERY
-      // =========================
       case AppRoutes.deliveryTracking:
-        return _build(const DeliveryTrackingScreen());
+        return _fadeRoute(const DeliveryTrackingScreen(), settings);
+      case AppRoutes.settings:
+        return _fadeRoute(const Scaffold(body: Center(child: SeedButton())), settings);
 
-      // =========================
-      // DEFAULT (404)
-      // =========================
       default:
-        return _errorRoute("Route not found: ${settings.name}");
+        return _errorRoute(settings, 'Route not found.');
     }
   }
 
-  // =========================
-  // ROUTE HELPER
-  // =========================
-  static MaterialPageRoute _build(Widget child) {
-    return MaterialPageRoute(builder: (_) => child);
+  static PageRouteBuilder<dynamic> _fadeRoute(
+    Widget page,
+    RouteSettings settings,
+  ) {
+    return PageRouteBuilder<dynamic>(
+      settings: settings,
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (_, animation, __) => FadeTransition(
+        opacity: animation,
+        child: page,
+      ),
+    );
   }
 
-  static MaterialPageRoute _errorRoute(String message) {
-    return MaterialPageRoute(
+  static MaterialPageRoute<dynamic> _errorRoute(
+    RouteSettings settings,
+    String message,
+  ) {
+    return MaterialPageRoute<dynamic>(
+      settings: settings,
       builder: (_) => Scaffold(
+        appBar: AppBar(
+          leading: const BackButton(),
+          title: const Text('Navigation Error'),
+        ),
         body: Center(
-          child: Text(
-            "❌ $message",
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              '❌ $message\n\nRoute: ${settings.name}',
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ),

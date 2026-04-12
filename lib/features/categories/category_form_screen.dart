@@ -1,3 +1,4 @@
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -83,7 +84,7 @@ class _CategoryFormScreenState extends State<CategoryFormScreen> {
         ),
       );
 
-      Navigator.pop(context);
+      NavigationService.goBack();
     } catch (e) {
       if (!mounted) return;
 

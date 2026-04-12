@@ -1,6 +1,8 @@
 import 'package:admin_control/admin/admin_provider.dart';
 import 'package:admin_control/providers/product_provider.dart';
 import 'package:admin_control/widgets/product_card.dart';
+import 'package:admin_control/core/routes/app_routes.dart';
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -44,7 +46,7 @@ class _ProductScreenState extends State<ProductScreen> {
       floatingActionButton: isAdmin
           ? FloatingActionButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/add-product');
+                NavigationService.navigateTo(AppRoutes.addProduct);
               },
               child: const Icon(Icons.add),
             )
@@ -111,7 +113,7 @@ class _ProductScreenState extends State<ProductScreen> {
                 icon: const Icon(Icons.add),
                 label: const Text("Add Product"),
                 onPressed: () {
-                  Navigator.pushNamed(context, '/add-product');
+                  NavigationService.navigateTo(AppRoutes.addProduct);
                 },
               ),
           ],

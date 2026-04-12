@@ -1,9 +1,11 @@
+import 'package:admin_control/core/routes/app_routes.dart';
+import 'package:admin_control/core/routes/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/order_provider.dart';
-import '../../models/order_model.dart';
 import '../../../admin/admin_provider.dart';
+import '../../models/order_model.dart';
+import '../../providers/order_provider.dart';
 
 class OrderScreen extends StatefulWidget {
   const OrderScreen({super.key});
@@ -18,8 +20,6 @@ class _OrderListState extends State<OrderScreen> {
   @override
   void initState() {
     super.initState();
-
-    /// 🔥 SAFE INIT
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<OrderProvider>().init();
@@ -30,38 +30,33 @@ class _OrderListState extends State<OrderScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<OrderProvider>();
     final admin = context.watch<AdminProvider>();
-
     final orders = _applyFilter(provider.orders);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0B0F1A),
       appBar: AppBar(
-        title: const Text("Orders"),
+        leading: const BackButton(),
+        title: const Text('Orders'),
         backgroundColor: const Color(0xFF111827),
       ),
       body: Column(
         children: [
           _dashboard(provider),
           _filters(),
-          Expanded(
-            child: _buildBody(provider, admin, orders),
-          ),
+          Expanded(child: _buildBody(provider, admin, orders)),
         ],
       ),
     );
   }
 
-  // =========================
-  // 📊 DASHBOARD CARDS
-  // =========================
   Widget _dashboard(OrderProvider provider) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          _card("Total", provider.totalOrders.toString()),
-          _card("Revenue", "₹${provider.totalRevenue.toStringAsFixed(0)}"),
-          _card("Today", "₹${provider.todayRevenue.toStringAsFixed(0)}"),
+          _card('Total', provider.totalOrders.toString()),
+          _card('Revenue', '₹${provider.totalRevenue.toStringAsFixed(0)}'),
+          _card('Today', '₹${provider.todayRevenue.toStringAsFixed(0)}'),
         ],
       ),
     );
@@ -78,23 +73,25 @@ class _OrderListState extends State<OrderScreen> {
         ),
         child: Column(
           children: [
-            Text(value,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16)),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(title,
-                style: const TextStyle(color: Colors.white60, fontSize: 12)),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white60, fontSize: 12),
+            ),
           ],
         ),
       ),
     );
   }
 
-  // =========================
-  // 🔍 FILTERS
-  // =========================
   Widget _filters() {
     return SizedBox(
       height: 45,
@@ -102,10 +99,8 @@ class _OrderListState extends State<OrderScreen> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 10),
         children: [
-          _filterChip("All", null),
-          ...OrderStatus.values.map(
-            (s) => _filterChip(s.name, s),
-          ),
+          _filterChip('All', null),
+          ...OrderStatus.values.map((s) => _filterChip(s.name, s)),
         ],
       ),
     );
@@ -113,15 +108,12 @@ class _OrderListState extends State<OrderScreen> {
 
   Widget _filterChip(String label, OrderStatus? status) {
     final isSelected = _filter == status;
-
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         label: Text(label.toUpperCase()),
         selected: isSelected,
-        onSelected: (_) {
-          setState(() => _filter = status);
-        },
+        onSelected: (_) => setState(() => _filter = status),
       ),
     );
   }
@@ -131,9 +123,6 @@ class _OrderListState extends State<OrderScreen> {
     return orders.where((o) => o.status == _filter).toList();
   }
 
-  // =========================
-  // 🔥 BODY
-  // =========================
   Widget _buildBody(
     OrderProvider provider,
     AdminProvider admin,
@@ -145,19 +134,13 @@ class _OrderListState extends State<OrderScreen> {
 
     if (provider.error != null && orders.isEmpty) {
       return Center(
-        child: Text(
-          provider.error!,
-          style: const TextStyle(color: Colors.red),
-        ),
+        child: Text(provider.error!, style: const TextStyle(color: Colors.red)),
       );
     }
 
     if (orders.isEmpty) {
       return const Center(
-        child: Text(
-          "No Orders Found",
-          style: TextStyle(color: Colors.white70),
-        ),
+        child: Text('No Orders Found', style: TextStyle(color: Colors.white70)),
       );
     }
 
@@ -166,97 +149,90 @@ class _OrderListState extends State<OrderScreen> {
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: orders.length,
-        itemBuilder: (_, i) {
-          final order = orders[i];
-          return _orderCard(order, provider, admin);
-        },
+        itemBuilder: (_, i) => _orderCard(orders[i], provider, admin),
       ),
     );
   }
 
-  // =========================
-  // 📦 ORDER CARD
-  // =========================
   Widget _orderCard(
     OrderModel order,
     OrderProvider provider,
     AdminProvider admin,
   ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(16),
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => NavigationService.navigateTo(
+        AppRoutes.orderDetail,
+        arguments: order,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Order: ${order.orderId}",
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF111827),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Order: ${order.orderId}',
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
-
-          const SizedBox(height: 6),
-
-          Text("User: ${order.userId}",
-              style: const TextStyle(color: Colors.white70)),
-
-          Text("₹${order.totalAmount}",
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text('User: ${order.userId}', style: const TextStyle(color: Colors.white70)),
+            Text(
+              '₹${order.totalAmount}',
               style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
-
-          if (order.createdAt != null)
-            Text(order.createdAt.toString(),
-                style: const TextStyle(color: Colors.white38)),
-
-          const SizedBox(height: 10),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _statusBadge(order.status),
-              if (admin.isAdmin || admin.isStaff)
-                _statusDropdown(order, provider),
-            ],
-          ),
-        ],
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            if (order.createdAt != null)
+              Text(
+                order.createdAt.toString(),
+                style: const TextStyle(color: Colors.white38),
+              ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _statusBadge(order.status),
+                if (admin.isAdmin || admin.isStaff)
+                  _statusDropdown(order, provider),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // =========================
-  // 🔽 STATUS DROPDOWN
-  // =========================
-  Widget _statusDropdown(
-    OrderModel order,
-    OrderProvider provider,
-  ) {
+  Widget _statusDropdown(OrderModel order, OrderProvider provider) {
     return DropdownButton<OrderStatus>(
       value: order.status,
       dropdownColor: const Color(0xFF1F2937),
-      items: OrderStatus.values.map((status) {
-        return DropdownMenuItem(
-          value: status,
-          child: Text(
-            status.name.toUpperCase(),
-            style: const TextStyle(color: Colors.white),
-          ),
-        );
-      }).toList(),
+      items: OrderStatus.values
+          .map(
+            (status) => DropdownMenuItem(
+              value: status,
+              child: Text(
+                status.name.toUpperCase(),
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          )
+          .toList(),
       onChanged: (value) {
-        if (value != null) {
-          provider.updateOrderStatus(
-            orderId: order.id,
-            status: value,
-          );
-        }
+        if (value == null) return;
+        provider.updateOrderStatus(orderId: order.id, status: value);
       },
     );
   }
 
-  // =========================
-  // 🎨 STATUS BADGE
-  // =========================
   Widget _statusBadge(OrderStatus status) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -266,7 +242,7 @@ class _OrderListState extends State<OrderScreen> {
       ),
       child: Text(
         status.name.toUpperCase(),
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -276,9 +252,9 @@ class _OrderListState extends State<OrderScreen> {
       case OrderStatus.pending:
         return Colors.orange;
       case OrderStatus.confirmed:
-        return Colors.blue;
+        return Colors.purple;
       case OrderStatus.shipped:
-        return Colors.indigo;
+        return Colors.blue;
       case OrderStatus.delivered:
         return Colors.green;
       case OrderStatus.cancelled:
