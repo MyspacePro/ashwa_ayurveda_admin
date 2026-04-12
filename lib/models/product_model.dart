@@ -7,19 +7,24 @@ class ProductModel {
   final double price;
   final String description;
   final List<String> images;
+
   final String categoryId;
   final String subCategoryId;
+
   final double rating;
   final int totalReviews;
+
   final int stock;
   final bool isFeatured;
   final bool isActive;
+
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
   final double? originalPrice;
   final int? discountPercent;
 
-  ProductModel({
+  const ProductModel({
     required this.id,
     required this.name,
     required this.price,
@@ -38,6 +43,19 @@ class ProductModel {
     this.discountPercent,
   });
 
+  // =========================
+  // 🔥 SAFE VALUE GETTERS (UPDATED AS PER YOUR NEED)
+  // =========================
+
+  double get originalPriceValue =>
+      (originalPrice ?? 0.0).toDouble();
+
+  int get discountPercentValue =>
+      (discountPercent ?? 0).toInt();
+
+  // =========================
+  // COPY WITH
+  // =========================
   ProductModel copyWith({
     String? id,
     String? name,
@@ -76,29 +94,28 @@ class ProductModel {
     );
   }
 
+  // =========================
+  // FROM FIRESTORE
+  // =========================
   factory ProductModel.fromMap(Map<String, dynamic> map, String docId) {
     double toDouble(dynamic value) {
-      if (value is int) return value.toDouble();
-      if (value is double) return value;
-      return double.tryParse(value.toString()) ?? 0.0;
+      if (value is num) return value.toDouble();
+      return double.tryParse(value?.toString() ?? '') ?? 0.0;
     }
 
     int toInt(dynamic value) {
-      if (value is int) return value;
-      return int.tryParse(value.toString()) ?? 0;
+      if (value is num) return value.toInt();
+      return int.tryParse(value?.toString() ?? '') ?? 0;
     }
 
     DateTime? toDate(dynamic value) {
-      if (value == null) return null;
       if (value is Timestamp) return value.toDate();
       if (value is String) return DateTime.tryParse(value);
       return null;
     }
 
     List<String> toStringList(dynamic value) {
-      if (value is List) {
-        return value.map((e) => e.toString()).toList();
-      }
+      if (value is List) return value.map((e) => e.toString()).toList();
       return [];
     }
 
@@ -117,18 +134,23 @@ class ProductModel {
       isActive: map['isActive'] ?? true,
       createdAt: toDate(map['createdAt']),
       updatedAt: toDate(map['updatedAt']),
-      originalPrice:
-          map['originalPrice'] != null ? toDouble(map['originalPrice']) : null,
-      discountPercent:
-          map['discountPercent'] != null ? toInt(map['discountPercent']) : null,
+      originalPrice: map['originalPrice'] != null
+          ? toDouble(map['originalPrice'])
+          : null,
+      discountPercent: map['discountPercent'] != null
+          ? toInt(map['discountPercent'])
+          : null,
     );
   }
 
+  // =========================
+  // TO FIRESTORE
+  // =========================
   Map<String, dynamic> toMap({bool isCreate = false}) {
-    return {
-      'name': name,
+    final data = {
+      'name': name.trim(),
       'price': price,
-      'description': description,
+      'description': description.trim(),
       'images': images,
       'categoryId': categoryId,
       'subCategoryId': subCategoryId,
@@ -137,37 +159,62 @@ class ProductModel {
       'stock': stock,
       'isFeatured': isFeatured,
       'isActive': isActive,
-      if (isCreate)
-        'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
-      'originalPrice': originalPrice,
-      'discountPercent': discountPercent,
     };
+
+    if (isCreate) {
+      data['createdAt'] = FieldValue.serverTimestamp();
+    }
+
+    if (originalPrice != null) {
+      data['originalPrice'] = originalPriceValue;
+    }
+
+    if (discountPercent != null) {
+      data['discountPercent'] = discountPercentValue;
+    }
+
+    return data;
   }
 
+  // =========================
+  // BUSINESS LOGIC
+  // =========================
+
   bool get inStock => stock > 0;
+
   bool get lowStock => stock > 0 && stock <= 5;
-  String get primaryImage => images.isNotEmpty ? images.first : '';
-  double get discountPrice => price;
+
+  String get primaryImage =>
+      images.isNotEmpty ? images.first : '';
+
+  double get discountPrice {
+    if (discountPercentValue > 0) {
+      return price - (price * discountPercentValue / 100);
+    }
+    return price;
+  }
 
   bool get hasDiscount {
-    final double basePrice = originalPrice ?? price;
-    return discountPrice < basePrice;
+    return discountPercentValue > 0 ||
+        originalPriceValue > price;
   }
 
   int get discount {
-    if (discountPercent != null && discountPercent! >= 0) {
-      return discountPercent!;
+    if (discountPercentValue > 0) return discountPercentValue;
+
+    if (originalPriceValue > price) {
+      return (((originalPriceValue - price) /
+                  originalPriceValue) *
+              100)
+          .round();
     }
-    final double basePrice = originalPrice ?? price;
-    if (basePrice <= 0 || !hasDiscount) {
-      return 0;
-    }
-    return (((basePrice - discountPrice) / basePrice) * 100).round();
+
+    return 0;
   }
 
   String get formattedPrice {
-    final NumberFormat formatter = NumberFormat.currency(
+    final formatter = NumberFormat.currency(
       locale: 'en_IN',
       symbol: '₹',
       decimalDigits: discountPrice % 1 == 0 ? 0 : 2,
@@ -175,7 +222,8 @@ class ProductModel {
     return formatter.format(discountPrice);
   }
 
-  double get safeRating => rating.clamp(0.0, 5.0).toDouble();
+  double get safeRating =>
+      rating.clamp(0.0, 5.0).toDouble();
 
   String get stockStatus {
     if (stock <= 0) return 'Out of stock';

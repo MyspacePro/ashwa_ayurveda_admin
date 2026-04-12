@@ -1,4 +1,5 @@
 import 'package:admin_control/admin/admin_provider.dart';
+import 'package:admin_control/models/product_model.dart';
 import 'package:admin_control/widgets/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,23 +17,20 @@ class _ProductListState extends State<ProductList> {
   void initState() {
     super.initState();
 
-    /// 🔥 SAFE INIT (NO BUILD CONTEXT ISSUE)
+    /// 🔥 SAFE INIT
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<ProductProvider>().init();
     });
   }
 
-  // =========================
-  // 🧱 UI
-  // =========================
   @override
   Widget build(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
     final adminProvider = context.watch<AdminProvider>();
 
     final isAdmin = adminProvider.isAdmin;
-    final products = productProvider.products;
+    final List<ProductModel> products = productProvider.products;
 
     return Scaffold(
       appBar: AppBar(
@@ -42,15 +40,19 @@ class _ProductListState extends State<ProductList> {
             IconButton(
               tooltip: "Add Product",
               icon: const Icon(Icons.add),
-              onPressed: () {
-                Navigator.pushNamed(context, '/add-product');
-              },
+              onPressed: () => _goToAddProduct(context),
             ),
         ],
       ),
-
       body: _buildBody(productProvider, products, isAdmin),
     );
+  }
+
+  // =========================
+  // 🔥 NAVIGATION
+  // =========================
+  void _goToAddProduct(BuildContext context) {
+    Navigator.pushNamed(context, '/add-product');
   }
 
   // =========================
@@ -58,48 +60,113 @@ class _ProductListState extends State<ProductList> {
   // =========================
   Widget _buildBody(
     ProductProvider provider,
-    List products,
+    List<ProductModel> products,
     bool isAdmin,
   ) {
-    // 🔄 LOADING
+    /// 🔄 FIRST LOAD
     if (provider.isLoading && products.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // ❌ ERROR
+    /// ❌ ERROR STATE
     if (provider.error != null && products.isEmpty) {
-      return Center(
+      return _ErrorState(
+        message: provider.error!,
+        onRetry: provider.refresh,
+      );
+    }
+
+    /// 📭 EMPTY STATE
+    if (products.isEmpty) {
+      return _EmptyState(isAdmin: isAdmin);
+    }
+
+    /// 📦 PRODUCT LIST
+    return RefreshIndicator(
+      onRefresh: provider.refresh,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: products.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (context, i) {
+          final product = products[i];
+
+          return ProductCard(
+            key: ValueKey(product.id), // 🔥 performance boost
+            product: product,
+            isAdmin: isAdmin,
+          );
+        },
+      ),
+    );
+  }
+}
+
+//
+// =========================
+// ❌ ERROR UI (REUSABLE)
+// =========================
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final Future<void> Function() onRetry;
+
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const Icon(Icons.error_outline, size: 40, color: Colors.red),
+            const SizedBox(height: 10),
             Text(
-              provider.error!,
-              style: const TextStyle(color: Colors.red),
+              message,
               textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.red),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                provider.refresh();
-              },
+              onPressed: onRetry,
               child: const Text("Retry"),
             ),
           ],
         ),
-      );
-    }
+      ),
+    );
+  }
+}
 
-    // 📭 EMPTY STATE
-    if (products.isEmpty) {
-      return Center(
+//
+// =========================
+// 📭 EMPTY UI (REUSABLE)
+// =========================
+class _EmptyState extends StatelessWidget {
+  final bool isAdmin;
+
+  const _EmptyState({required this.isAdmin});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const Icon(Icons.inventory_2_outlined, size: 50),
+            const SizedBox(height: 10),
             const Text(
               "No Products Found",
               style: TextStyle(fontSize: 16),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             if (isAdmin)
               ElevatedButton.icon(
                 icon: const Icon(Icons.add),
@@ -110,28 +177,6 @@ class _ProductListState extends State<ProductList> {
               ),
           ],
         ),
-      );
-    }
-
-    // =========================
-    // 📦 PRODUCT LIST
-    // =========================
-    return RefreshIndicator(
-      onRefresh: () async {
-        await provider.refresh();
-      },
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: products.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, i) {
-          final product = products[i];
-
-          return ProductCard(
-            product: product,
-            isAdmin: isAdmin,
-          );
-        },
       ),
     );
   }

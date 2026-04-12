@@ -1,5 +1,6 @@
 import 'package:admin_control/features/products/edit_product.dart';
 import 'package:admin_control/models/product_model.dart';
+import 'package:admin_control/providers/category_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -24,52 +25,40 @@ class _ProductCardState extends State<ProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final product = widget.product;
+    final categoryProvider = context.watch<CategoryProvider>();
+
+    final category =
+        categoryProvider.getCategoryById(product.categoryId);
+    final subCategory =
+        categoryProvider.getSubCategoryById(product.subCategoryId);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: theme.cardColor,
+        color: const Color(0xFF1F2937),
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
-      child: ClipRRect(
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: () => _goToEdit(context),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                _buildImage(),
+        onTap: () => _goToEdit(context),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              _buildImage(product),
 
-                const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTitle(theme, product),
-                      const SizedBox(height: 4),
-                      _buildCategory(theme, product),
-                      const SizedBox(height: 8),
-                      _buildPriceRow(product),
-                      const SizedBox(height: 6),
-                      _buildMetaRow(product),
-                    ],
-                  ),
+              Expanded(
+                child: _buildContent(
+                  product,
+                  category?.name,
+                  subCategory?.name,
                 ),
+              ),
 
-                if (widget.isAdmin) _buildActions(context, product),
-              ],
-            ),
+              if (widget.isAdmin) _buildActions(context, product),
+            ],
           ),
         ),
       ),
@@ -79,14 +68,14 @@ class _ProductCardState extends State<ProductCard> {
   // =========================
   // IMAGE
   // =========================
-  Widget _buildImage() {
-    final product = widget.product;
+  Widget _buildImage(ProductModel product) {
+    final image = product.primaryImage;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: product.images.isNotEmpty
+      child: image.isNotEmpty
           ? Image.network(
-              product.images as String,
+              image,
               width: 75,
               height: 75,
               fit: BoxFit.cover,
@@ -100,34 +89,54 @@ class _ProductCardState extends State<ProductCard> {
     return Container(
       width: 75,
       height: 75,
-      color: Colors.grey.withOpacity(0.2),
-      child: const Icon(Icons.image, color: Colors.grey),
+      color: Colors.grey.withOpacity(0.15),
+      child: const Icon(Icons.image, color: Colors.white24),
     );
   }
 
   // =========================
-  // TITLE
+  // CONTENT
   // =========================
-  Widget _buildTitle(ThemeData theme, ProductModel product) {
-    return Text(
-      product.name,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
+  Widget _buildContent(
+    ProductModel product,
+    String? categoryName,
+    String? subCategoryName,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        /// TITLE
+        Text(
+          product.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
 
-  // =========================
-  // CATEGORY
-  // =========================
-  Widget _buildCategory(ThemeData theme, ProductModel product) {
-    return Text(
-      product.categoryId,
-      style: theme.textTheme.bodySmall?.copyWith(
-        color: Colors.grey,
-      ),
+        const SizedBox(height: 4),
+
+        /// CATEGORY + SUBCATEGORY
+        Text(
+          "${categoryName ?? 'Unknown'}"
+          "${subCategoryName != null ? " • $subCategoryName" : ""}",
+          style: const TextStyle(color: Colors.white54, fontSize: 12),
+        ),
+
+        const SizedBox(height: 8),
+
+        _buildPriceRow(product),
+
+        const SizedBox(height: 6),
+
+        _buildMetaRow(product),
+
+        const SizedBox(height: 6),
+
+        _buildStatusRow(product),
+      ],
     );
   }
 
@@ -142,16 +151,18 @@ class _ProductCardState extends State<ProductCard> {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 14,
+            color: Colors.white,
           ),
         ),
+
         const SizedBox(width: 6),
 
-        if (product.hasDiscount)
+        if (product.hasDiscount && product.originalPrice != null)
           Text(
             "₹${product.originalPrice}",
             style: const TextStyle(
               decoration: TextDecoration.lineThrough,
-              color: Colors.grey,
+              color: Colors.white38,
               fontSize: 12,
             ),
           ),
@@ -173,7 +184,7 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   // =========================
-  // META
+  // META (RATING + STOCK)
   // =========================
   Widget _buildMetaRow(ProductModel product) {
     return Row(
@@ -182,14 +193,27 @@ class _ProductCardState extends State<ProductCard> {
         const SizedBox(width: 4),
         Text(
           product.safeRating.toString(),
-          style: const TextStyle(fontSize: 12),
+          style: const TextStyle(fontSize: 12, color: Colors.white70),
         ),
+
         const SizedBox(width: 10),
-        Text(
-          product.stockStatus,
-          style: TextStyle(
-            fontSize: 12,
-            color: product.inStock ? Colors.green : Colors.red,
+
+        /// 🔥 STOCK BADGE
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: product.inStock
+                ? Colors.green.withOpacity(0.2)
+                : Colors.red.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            product.stockStatus,
+            style: TextStyle(
+              fontSize: 10,
+              color: product.inStock ? Colors.green : Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -197,22 +221,61 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   // =========================
-  // ACTIONS (ADMIN)
+  // STATUS BADGES
+  // =========================
+  Widget _buildStatusRow(ProductModel product) {
+    return Row(
+      children: [
+        if (product.isFeatured)
+          _badge("Featured", Colors.orange),
+
+        if (!product.isActive)
+          _badge("Inactive", Colors.red),
+      ],
+    );
+  }
+
+  Widget _badge(String text, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  // =========================
+  // ACTIONS
   // =========================
   Widget _buildActions(BuildContext context, ProductModel product) {
-    return _isDeleting
-        ? const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          )
-        : IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
-            onPressed: () => _confirmDelete(context),
-          );
+    return Column(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.edit, color: Colors.amber),
+          onPressed: () => _goToEdit(context),
+        ),
+        _isDeleting
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _confirmDelete(context),
+              ),
+      ],
+    );
   }
 
   // =========================
@@ -228,7 +291,7 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   // =========================
-  // DELETE (SAFE)
+  // DELETE
   // =========================
   Future<void> _confirmDelete(BuildContext context) async {
     final product = widget.product;
@@ -255,7 +318,6 @@ class _ProductCardState extends State<ProductCard> {
     );
 
     if (confirmed != true) return;
-
     if (!mounted) return;
 
     setState(() => _isDeleting = true);
@@ -268,16 +330,14 @@ class _ProductCardState extends State<ProductCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Product deleted")),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        const SnackBar(content: Text("Failed to delete product")),
       );
     } finally {
-      if (mounted) {
-        setState(() => _isDeleting = false);
-      }
+      if (mounted) setState(() => _isDeleting = false);
     }
   }
 }

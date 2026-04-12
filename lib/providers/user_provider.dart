@@ -8,25 +8,22 @@ import '../services/firebase/firebase_service.dart';
 class UserProvider with ChangeNotifier {
   final FirestoreService _firestoreService;
 
-  // =========================
-  // 🔥 CONSTRUCTOR (DI FIXED)
-  // =========================
   UserProvider(this._firestoreService);
 
   // =========================
   // 📦 STATE
   // =========================
-
   List<UserModel> _users = [];
   bool _isLoading = false;
   String? _error;
 
   StreamSubscription<List<UserModel>>? _usersSubscription;
 
+  bool _isInitialized = false;
+
   // =========================
   // 📦 GETTERS
   // =========================
-
   List<UserModel> get users => List.unmodifiable(_users);
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -48,9 +45,17 @@ class UserProvider with ChangeNotifier {
   }
 
   // =========================
+  // 🚀 INIT (SAFE)
+  // =========================
+  void init() {
+    if (_isInitialized) return;
+    _isInitialized = true;
+    listenToUsers();
+  }
+
+  // =========================
   // 🔄 STATE HELPERS
   // =========================
-
   void _setLoading(bool value) {
     if (_isLoading == value) return;
     _isLoading = value;
@@ -72,7 +77,6 @@ class UserProvider with ChangeNotifier {
   // =========================
   // 👥 REALTIME LISTENER
   // =========================
-
   void listenToUsers() {
     _usersSubscription?.cancel();
 
@@ -86,7 +90,7 @@ class UserProvider with ChangeNotifier {
         notifyListeners();
       },
       onError: (e) {
-        _setError(e.toString());
+        _setError('Failed to load users: ${e.toString()}');
         _setLoading(false);
       },
     );
@@ -95,31 +99,30 @@ class UserProvider with ChangeNotifier {
   // =========================
   // ➕ CREATE USER
   // =========================
-
   Future<void> createUser(UserModel user) async {
     try {
       _clearError();
       await _firestoreService.createUser(user);
     } catch (e) {
-      _setError(e.toString());
+      _setError('Create user failed: ${e.toString()}');
+      rethrow;
     }
   }
 
   // =========================
   // ✏️ UPDATE USER (OPTIMISTIC)
   // =========================
-
   Future<void> updateUser({
     required String userId,
     required Map<String, dynamic> data,
   }) async {
     final index = _users.indexWhere((u) => u.id == userId);
-    UserModel? oldUser = index != -1 ? _users[index] : null;
+    UserModel? backup = index != -1 ? _users[index] : null;
 
     try {
       _clearError();
 
-      // 🔥 Optimistic UI update
+      // 🔥 Optimistic Update
       if (index != -1) {
         _users[index] = _users[index].copyWith(
           name: data['name'] ?? _users[index].name,
@@ -132,41 +135,37 @@ class UserProvider with ChangeNotifier {
         notifyListeners();
       }
 
-      await _firestoreService.updateUser(
-        userId,
-        {
-          ...data,
-          "updatedAt": FieldValue.serverTimestamp(),
-        },
-      );
+      await _firestoreService.updateUser(userId, {
+        ...data,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       // 🔁 Rollback
-      if (index != -1 && oldUser != null) {
-        _users[index] = oldUser;
+      if (index != -1 && backup != null) {
+        _users[index] = backup;
         notifyListeners();
       }
 
-      _setError(e.toString());
+      _setError('Update failed: ${e.toString()}');
+      rethrow;
     }
   }
 
   // =========================
   // 🚫 BLOCK / UNBLOCK
   // =========================
-
   Future<void> toggleBlockUser(UserModel user) async {
     await updateUser(
       userId: user.id,
       data: {
-        "isBlocked": !user.isBlocked,
+        'isBlocked': !user.isBlocked,
       },
     );
   }
 
   // =========================
-  // ❌ DELETE USER (OPTIMISTIC)
+  // ❌ DELETE USER (SOFT DELETE RECOMMENDED)
   // =========================
-
   Future<void> deleteUser(String userId) async {
     final index = _users.indexWhere((u) => u.id == userId);
     UserModel? backup = index != -1 ? _users[index] : null;
@@ -174,6 +173,7 @@ class UserProvider with ChangeNotifier {
     try {
       _clearError();
 
+      // 🔥 Optimistic Remove
       if (index != -1) {
         _users.removeAt(index);
         notifyListeners();
@@ -187,14 +187,14 @@ class UserProvider with ChangeNotifier {
         notifyListeners();
       }
 
-      _setError(e.toString());
+      _setError('Delete failed: ${e.toString()}');
+      rethrow;
     }
   }
 
   // =========================
   // 🔍 FILTERS
   // =========================
-
   List<UserModel> get blockedUserList =>
       _users.where((u) => u.isBlocked).toList();
 
@@ -205,21 +205,28 @@ class UserProvider with ChangeNotifier {
       _users.where((u) => u.isAdmin).toList();
 
   // =========================
+  // 🔄 REFRESH (FORCE RELOAD)
+  // =========================
+  Future<void> refresh() async {
+    _isInitialized = false;
+    listenToUsers();
+  }
+
+  // =========================
   // 🧹 CLEAR
   // =========================
-
   void clearUsers() {
     _usersSubscription?.cancel();
     _users = [];
     _error = null;
     _isLoading = false;
+    _isInitialized = false;
     notifyListeners();
   }
 
   // =========================
-  // ❌ DISPOSE (VERY IMPORTANT)
+  // ❌ DISPOSE
   // =========================
-
   @override
   void dispose() {
     _usersSubscription?.cancel();

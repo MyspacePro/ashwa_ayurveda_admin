@@ -12,57 +12,62 @@ class DashboardProvider with ChangeNotifier {
   // =========================
   // 📦 STATE
   // =========================
-
   List<OrderModel> _orders = [];
 
   bool _isLoading = false;
   String? _error;
 
   StreamSubscription<List<OrderModel>>? _subscription;
-
   bool _isInitialized = false;
 
   // =========================
   // 📦 GETTERS
   // =========================
-
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  int get totalOrders => _orders.length;
+  List<OrderModel> get validOrders =>
+      _orders.where((o) => o.status != OrderStatus.cancelled).toList();
+
+  int get totalOrders => validOrders.length;
 
   double get totalRevenue =>
-      _orders.fold(0.0, (sum, o) => sum + o.totalAmount);
+      validOrders.fold(0.0, (sum, o) => sum + o.totalAmount);
 
   int get pendingOrders =>
-      _orders.where((o) => o.status == OrderStatus.pending).length;
+      validOrders.where((o) => o.status == OrderStatus.pending).length;
 
   int get deliveredOrders =>
-      _orders.where((o) => o.status == OrderStatus.delivered).length;
+      validOrders.where((o) => o.status == OrderStatus.delivered).length;
 
   int get cancelledOrders =>
       _orders.where((o) => o.status == OrderStatus.cancelled).length;
 
   double get averageOrderValue =>
-      _orders.isEmpty ? 0 : totalRevenue / _orders.length;
+      validOrders.isEmpty ? 0 : totalRevenue / validOrders.length;
 
   // =========================
-  // 📅 DATE HELPERS
+  // 📅 SAFE DATE HELPERS (FIXED NULL SAFETY)
   // =========================
 
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year &&
-        a.month == b.month &&
-        a.day == b.day;
+  bool _isSameDay(DateTime? a, DateTime b) {
+    if (a == null) return false;
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  bool _isSameWeek(DateTime date, DateTime now) {
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    return date.isAfter(startOfWeek);
-  }
-
-  bool _isSameMonth(DateTime a, DateTime b) {
+  bool _isSameMonth(DateTime? a, DateTime b) {
+    if (a == null) return false;
     return a.year == b.year && a.month == b.month;
+  }
+
+  bool _isSameWeek(DateTime? date, DateTime now) {
+    if (date == null) return false;
+
+    final startOfWeek =
+        DateTime(now.year, now.month, now.day - (now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 7));
+
+    return date.isAfter(startOfWeek) && date.isBefore(endOfWeek);
   }
 
   // =========================
@@ -72,30 +77,24 @@ class DashboardProvider with ChangeNotifier {
   double get todayRevenue {
     final now = DateTime.now();
 
-    return _orders
-        .where((o) =>
-            o.createdAt != null &&
-            _isSameDay(o.createdAt!, now))
+    return validOrders
+        .where((o) => _isSameDay(o.createdAt, now))
         .fold(0.0, (sum, o) => sum + o.totalAmount);
   }
 
   double get weeklyRevenue {
     final now = DateTime.now();
 
-    return _orders
-        .where((o) =>
-            o.createdAt != null &&
-            _isSameWeek(o.createdAt!, now))
+    return validOrders
+        .where((o) => _isSameWeek(o.createdAt, now))
         .fold(0.0, (sum, o) => sum + o.totalAmount);
   }
 
   double get monthlyRevenue {
     final now = DateTime.now();
 
-    return _orders
-        .where((o) =>
-            o.createdAt != null &&
-            _isSameMonth(o.createdAt!, now))
+    return validOrders
+        .where((o) => _isSameMonth(o.createdAt, now))
         .fold(0.0, (sum, o) => sum + o.totalAmount);
   }
 
@@ -107,16 +106,12 @@ class DashboardProvider with ChangeNotifier {
     final now = DateTime.now();
     final yesterday = now.subtract(const Duration(days: 1));
 
-    final today = _orders
-        .where((o) =>
-            o.createdAt != null &&
-            _isSameDay(o.createdAt!, now))
+    final today = validOrders
+        .where((o) => _isSameDay(o.createdAt, now))
         .fold(0.0, (sum, o) => sum + o.totalAmount);
 
-    final yesterdayRevenue = _orders
-        .where((o) =>
-            o.createdAt != null &&
-            _isSameDay(o.createdAt!, yesterday))
+    final yesterdayRevenue = validOrders
+        .where((o) => _isSameDay(o.createdAt, yesterday))
         .fold(0.0, (sum, o) => sum + o.totalAmount);
 
     if (yesterdayRevenue == 0) return 0;
@@ -131,8 +126,8 @@ class DashboardProvider with ChangeNotifier {
   Map<String, int> get topProducts {
     final Map<String, int> productCount = {};
 
-    for (var order in _orders) {
-      for (var item in order.products) {
+    for (final order in validOrders) {
+      for (final item in order.products) {
         productCount[item.productId] =
             (productCount[item.productId] ?? 0) + item.quantity;
       }
@@ -145,7 +140,7 @@ class DashboardProvider with ChangeNotifier {
   }
 
   // =========================
-  // 📈 CHART DATA
+  // 📈 LAST 7 DAYS REVENUE
   // =========================
 
   Map<String, double> get last7DaysRevenue {
@@ -154,10 +149,8 @@ class DashboardProvider with ChangeNotifier {
     for (int i = 6; i >= 0; i--) {
       final day = DateTime.now().subtract(Duration(days: i));
 
-      final revenue = _orders
-          .where((o) =>
-              o.createdAt != null &&
-              _isSameDay(o.createdAt!, day))
+      final revenue = validOrders
+          .where((o) => _isSameDay(o.createdAt, day))
           .fold(0.0, (sum, o) => sum + o.totalAmount);
 
       data["${day.day}/${day.month}"] = revenue;
@@ -167,13 +160,12 @@ class DashboardProvider with ChangeNotifier {
   }
 
   // =========================
-  // 🚀 INIT (REALTIME)
+  // 🚀 INIT
   // =========================
 
   void init() {
     if (_isInitialized) return;
     _isInitialized = true;
-
     _startStream();
   }
 
@@ -183,7 +175,6 @@ class DashboardProvider with ChangeNotifier {
     _setLoading(true);
     _clearError();
 
-    /// 🔥 FIXED: Direct List<OrderModel>
     _subscription = _firestoreService.streamOrders().listen(
       (ordersList) {
         _orders = ordersList;
@@ -195,6 +186,15 @@ class DashboardProvider with ChangeNotifier {
         _setLoading(false);
       },
     );
+  }
+
+  // =========================
+  // 🔄 REFRESH
+  // =========================
+
+  Future<void> refresh() async {
+    _isInitialized = false;
+    _startStream();
   }
 
   // =========================
@@ -213,7 +213,10 @@ class DashboardProvider with ChangeNotifier {
   }
 
   void _clearError() {
-    _error = null;
+    if (_error != null) {
+      _error = null;
+      notifyListeners();
+    }
   }
 
   // =========================

@@ -21,7 +21,7 @@ import 'services/firebase/firebase_service.dart';
 import 'services/firebase/coupon_service.dart';
 
 // ROUTES
-import 'admin/app_routes.dart';
+import 'core/routes/app_routes.dart';
 
 // FIREBASE OPTIONS
 import 'firebase_options.dart';
@@ -36,7 +36,12 @@ Future<void> main() async {
   final firestoreService = FirestoreService();
   final couponService = CouponService();
 
-  runApp(AdminControlApp(firestoreService: firestoreService, couponService: couponService));
+  runApp(
+    AdminControlApp(
+      firestoreService: firestoreService,
+      couponService: couponService,
+    ),
+  );
 }
 
 class AdminControlApp extends StatelessWidget {
@@ -53,38 +58,76 @@ class AdminControlApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        /// 🔥 CORE SERVICE
         Provider<FirestoreService>.value(value: firestoreService),
+
+        /// 📊 DASHBOARD
         ChangeNotifierProvider(
-  create: (context) =>
-      DashboardProvider(context.read<FirestoreService>()),),
-        ChangeNotifierProvider(create: (_) => AdminProvider()),
-        ChangeNotifierProvider(create: (_) => ProductProvider(firestoreService)),
-        ChangeNotifierProvider(create: (_) => UserProvider(firestoreService)),
-        ChangeNotifierProvider(
-  create: (context) =>
-      OrderProvider(context.read<FirestoreService>()),),
-        ChangeNotifierProvider(
-          create: (context) => CategoryProvider(context.read<FirestoreService>()),
+          create: (_) => DashboardProvider(firestoreService),
         ),
-        ChangeNotifierProvider(create: (_) => CouponProvider(couponService)),
-        ChangeNotifierProvider(create: (_) => DeliveryProvider(firestoreService)),
-        ChangeNotifierProvider(create: (_) => StaffProvider(firestoreService)),
+
+        /// 🔐 ADMIN
+        ChangeNotifierProvider(
+          create: (_) => AdminProvider(),
+        ),
+
+        /// 📦 PRODUCTS
+        ChangeNotifierProvider(
+          create: (_) => ProductProvider(firestoreService),
+        ),
+
+        /// 👤 USERS
+        ChangeNotifierProvider(
+          create: (_) => UserProvider(firestoreService),
+        ),
+
+        /// 🛒 ORDERS
+        ChangeNotifierProvider(
+          create: (_) => OrderProvider(firestoreService),
+        ),
+
+        /// 🗂 CATEGORIES
+        ChangeNotifierProvider(
+  create: (context) {
+    final provider = CategoryProvider(firestoreService);
+    provider.init(); // 🔥 AUTO INIT
+    return provider;
+  },
+),
+
+        /// 🎟 COUPONS
+        ChangeNotifierProvider(
+          create: (_) => CouponProvider(couponService),
+        ),
+
+        /// 🚚 DELIVERY
+        ChangeNotifierProvider(
+          create: (_) => DeliveryProvider(firestoreService),
+        ),
+
+        /// 👨‍💼 STAFF
+        ChangeNotifierProvider(
+          create: (_) => StaffProvider(firestoreService),
+        ),
       ],
 
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Admin Control Panel',
 
-        theme: AppTheme.lightTheme,
+        /// 🎨 THEME
+        theme: AppTheme.darkTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.light,
+        themeMode: ThemeMode.dark,
 
-        /// ✅ ONLY ROUTES FILE CONTROLS NAVIGATION
+        /// ⚠️ CURRENT ROUTING (OK BUT NOT BEST)
         initialRoute: AppRoutes.adminLogin,
-
         routes: AppRoutes.routes,
+      
 
-        onUnknownRoute: AppRoutes.unknownRoute,
+        /// 🚀 RECOMMENDED UPGRADE (next step)
+        /// Replace above 3 lines with:
+        /// onGenerateRoute: AppRouter.generateRoute,
       ),
     );
   }

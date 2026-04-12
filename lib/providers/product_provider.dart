@@ -19,6 +19,7 @@ class ProductProvider with ChangeNotifier {
   StreamSubscription<List<ProductModel>>? _subscription;
 
   bool _isInitialized = false;
+  bool _isDisposed = false;
 
   // =========================
   // 📦 GETTERS
@@ -54,17 +55,21 @@ class ProductProvider with ChangeNotifier {
   void _startStream() {
     _subscription?.cancel();
 
-    _setLoading(true);
+    _setLoading(true, silent: _products.isNotEmpty);
     _clearError();
 
     _subscription = _firestoreService.streamProducts().listen(
       (data) {
+        if (_isDisposed) return;
+
         _products = data;
-        _setLoading(false);
+        _setLoading(false, silent: true);
         notifyListeners();
       },
       onError: (e) {
-        _setError(e.toString());
+        if (_isDisposed) return;
+
+        _setError(_parseError(e));
         _setLoading(false);
       },
     );
@@ -77,8 +82,9 @@ class ProductProvider with ChangeNotifier {
     try {
       _clearError();
       await _firestoreService.addProduct(product);
+      // stream auto update karega
     } catch (e) {
-      _setError(e.toString());
+      _setError(_parseError(e));
       rethrow;
     }
   }
@@ -93,7 +99,7 @@ class ProductProvider with ChangeNotifier {
     try {
       _clearError();
 
-      // 🔥 Optimistic UI update
+      // 🔥 Optimistic update
       if (index != -1) {
         _products[index] = product;
         notifyListeners();
@@ -107,7 +113,7 @@ class ProductProvider with ChangeNotifier {
         notifyListeners();
       }
 
-      _setError(e.toString());
+      _setError(_parseError(e));
       rethrow;
     }
   }
@@ -133,12 +139,14 @@ class ProductProvider with ChangeNotifier {
       _products.insert(index, backup);
       notifyListeners();
 
-      _setError(e.toString());
+      _setError(_parseError(e));
       rethrow;
     }
   }
 
-
+  // =========================
+  // 📦 STOCK UPDATE
+  // =========================
   Future<void> updateStock({
     required String productId,
     required int newStock,
@@ -150,26 +158,32 @@ class ProductProvider with ChangeNotifier {
         newStock: newStock,
       );
     } catch (e) {
-      _setError(e.toString());
+      _setError(_parseError(e));
       rethrow;
     }
   }
 
   // =========================
-  // 🔄 REFRESH (FORCE RECONNECT)
+  // 🔄 REFRESH (SAFE RECONNECT)
   // =========================
   Future<void> refresh() async {
-    _isInitialized = false;
-    _startStream();
+    try {
+      _isInitialized = false;
+      _subscription?.cancel();
+      _startStream();
+    } catch (e) {
+      _setError(_parseError(e));
+    }
   }
 
   // =========================
   // 🔧 HELPERS
   // =========================
-  void _setLoading(bool value) {
+  void _setLoading(bool value, {bool silent = false}) {
     if (_isLoading == value) return;
     _isLoading = value;
-    notifyListeners();
+
+    if (!silent) notifyListeners();
   }
 
   void _setError(String message) {
@@ -184,11 +198,16 @@ class ProductProvider with ChangeNotifier {
     }
   }
 
+  String _parseError(dynamic e) {
+    return e.toString().replaceAll('Exception:', '').trim();
+  }
+
   // =========================
   // 🧹 DISPOSE
   // =========================
   @override
   void dispose() {
+    _isDisposed = true;
     _subscription?.cancel();
     super.dispose();
   }

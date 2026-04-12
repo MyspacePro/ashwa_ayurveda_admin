@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Category {
+class CategoryModel {
   final String id;
   final String name;
   final String icon;
@@ -8,7 +8,7 @@ class Category {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  const Category({
+  const CategoryModel({
     required this.id,
     required this.name,
     required this.icon,
@@ -17,14 +17,14 @@ class Category {
     this.updatedAt,
   });
 
-  factory Category.fromMap(Map<String, dynamic> map, String docId) {
+  factory CategoryModel.fromMap(Map<String, dynamic> map, String docId) {
     DateTime? parseDate(dynamic value) {
       if (value is Timestamp) return value.toDate();
       if (value is String) return DateTime.tryParse(value);
       return null;
     }
 
-    return Category(
+    return CategoryModel(
       id: docId,
       name: map['name']?.toString() ?? '',
       icon: map['icon']?.toString() ?? map['imageUrl']?.toString() ?? '',

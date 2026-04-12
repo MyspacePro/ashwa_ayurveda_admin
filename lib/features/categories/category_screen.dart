@@ -1,44 +1,48 @@
-import 'package:admin_control/models/category_model.dart' as category_model;
+import 'package:admin_control/models/category_model.dart';
 import 'package:admin_control/services/firebase/firebase_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class CategoryListScreen extends StatefulWidget {
-  final FirestoreService firestoreService;
-
-  const CategoryListScreen({
-    super.key,
-    required this.firestoreService,
-  });
+  const CategoryListScreen({super.key});
 
   @override
   State<CategoryListScreen> createState() => _CategoryListScreenState();
 }
 
 class _CategoryListScreenState extends State<CategoryListScreen> {
-  bool _isDeleting = false;
+  final Set<String> _deletingIds = {};
+
+  // =========================
+  // 🔥 FIRESTORE SERVICE (PROVIDER)
+  // =========================
+  FirestoreService get firestore =>
+      context.read<FirestoreService>();
 
   // =========================
   // ❌ DELETE CATEGORY
   // =========================
   Future<void> _deleteCategory(String id) async {
     try {
-      setState(() => _isDeleting = true);
+      setState(() => _deletingIds.add(id));
 
-      await widget.firestoreService.deleteCategory(id);
+      await firestore.deleteCategory(id);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Category deleted successfully")),
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Category deleted successfully")),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     } finally {
-      if (mounted) setState(() => _isDeleting = false);
+      if (mounted) {
+        setState(() => _deletingIds.remove(id));
+      }
     }
   }
 
@@ -50,7 +54,9 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text("Delete Category"),
-        content: const Text("Are you sure you want to delete this category?"),
+        content: const Text(
+          "Are you sure you want to delete this category?",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -70,24 +76,21 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final firestore = context.read<FirestoreService>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Categories"),
         centerTitle: true,
       ),
 
-      // =========================
-      // 📡 REALTIME STREAM
-      // =========================
-      body: StreamBuilder<List<category_model.Category>>(
-        stream: widget.firestoreService.streamCategories(),
+      body: StreamBuilder<List<CategoryModel>>(
+        stream: firestore.streamCategories(),
         builder: (context, snapshot) {
-          // 🔄 Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // ❌ Error
           if (snapshot.hasError) {
             return Center(
               child: Text("Error: ${snapshot.error}"),
@@ -96,7 +99,6 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
           final categories = snapshot.data ?? [];
 
-          // 📭 Empty State
           if (categories.isEmpty) {
             return const Center(
               child: Text(
@@ -106,12 +108,12 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
             );
           }
 
-          // 📋 LIST
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final category = categories[index];
+              final isDeleting = _deletingIds.contains(category.id);
 
               return Card(
                 elevation: 3,
@@ -127,24 +129,26 @@ class _CategoryListScreenState extends State<CategoryListScreen> {
 
                   title: Text(
                     category.name.isEmpty ? 'No Name' : category.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
 
                   subtitle: Text(
                     category.icon.isEmpty ? 'No icon' : category.icon,
                   ),
 
-                  trailing: _isDeleting
+                  trailing: isDeleting
                       ? const SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmDelete(category.id),
+                          icon: const Icon(
+                            Icons.delete,
+                            color: Colors.red,
+                          ),
+                          onPressed: () =>
+                              _confirmDelete(category.id),
                         ),
                 ),
               );

@@ -11,50 +11,88 @@ class OrderProvider with ChangeNotifier {
 
   OrderProvider(this._firestoreService);
 
+  // =========================
+  // 📦 STATE
+  // =========================
   List<OrderModel> _orders = [];
   bool _isLoading = false;
   String? _error;
 
-  StreamSubscription<List<OrderModel>>? _ordersSubscription;
+  StreamSubscription<List<OrderModel>>? _subscription;
 
+  bool _isInitialized = false;
+
+  // =========================
+  // 📦 GETTERS
+  // =========================
   List<OrderModel> get orders => List.unmodifiable(_orders);
+
   bool get isLoading => _isLoading;
+
   String? get error => _error;
 
+  bool get isEmpty => _orders.isEmpty;
+
   int get totalOrders => _orders.length;
+
   double get totalRevenue =>
-      _orders.fold(0.0, (sum, order) => sum + order.totalAmount);
+      _orders.fold(0.0, (sum, o) => sum + o.totalAmount);
+
   int get pendingCount =>
       _orders.where((o) => o.status == OrderStatus.pending).length;
+
+  int get confirmedCount =>
+      _orders.where((o) => o.status == OrderStatus.confirmed).length;
+
+  int get shippedCount =>
+      _orders.where((o) => o.status == OrderStatus.shipped).length;
+
   int get deliveredCount =>
       _orders.where((o) => o.status == OrderStatus.delivered).length;
 
-  void _setLoading(bool value) {
-    if (_isLoading == value) return;
-    _isLoading = value;
-    notifyListeners();
+  int get cancelledCount =>
+      _orders.where((o) => o.status == OrderStatus.cancelled).length;
+
+  /// 🔥 Today Revenue (IMPORTANT FOR DASHBOARD)
+  double get todayRevenue {
+    final today = DateTime.now();
+    return _orders.fold(0.0, (sum, order) {
+      final date = order.createdAt;
+      if (date == null) return sum;
+      if (date.year == today.year &&
+          date.month == today.month &&
+          date.day == today.day) {
+        return sum + order.totalAmount;
+      }
+      return sum;
+    });
   }
 
-  void _setError(String? message) {
-    _error = message;
-    notifyListeners();
+  /// 🔥 Active Orders (Pending + Confirmed + Shipped)
+  List<OrderModel> get activeOrders => _orders.where((o) {
+        return o.status == OrderStatus.pending ||
+            o.status == OrderStatus.confirmed ||
+            o.status == OrderStatus.shipped;
+      }).toList();
+
+  // =========================
+  // 🚀 INIT
+  // =========================
+  void init() {
+    if (_isInitialized) return;
+    _isInitialized = true;
+    _startStream();
   }
 
-  void _clearError() {
-    if (_error != null) {
-      _error = null;
-      notifyListeners();
-    }
-  }
+  void _startStream() {
+    _subscription?.cancel();
 
-  void listenToOrders() {
-    _ordersSubscription?.cancel();
     _setLoading(true);
     _clearError();
 
-    _ordersSubscription = _firestoreService.streamOrders().listen(
-      (ordersList) {
-        _orders = ordersList;
+    _subscription = _firestoreService.streamOrders().listen(
+      (data) {
+        _orders = data;
         _setLoading(false);
         notifyListeners();
       },
@@ -65,14 +103,16 @@ class OrderProvider with ChangeNotifier {
     );
   }
 
+  /// 👤 USER ORDERS
   void listenToUserOrders(String userId) {
-    _ordersSubscription?.cancel();
+    _subscription?.cancel();
+
     _setLoading(true);
     _clearError();
 
-    _ordersSubscription = _firestoreService.streamUserOrders(userId).listen(
-      (ordersList) {
-        _orders = ordersList;
+    _subscription = _firestoreService.streamUserOrders(userId).listen(
+      (data) {
+        _orders = data;
         _setLoading(false);
         notifyListeners();
       },
@@ -83,6 +123,9 @@ class OrderProvider with ChangeNotifier {
     );
   }
 
+  // =========================
+  // ➕ PLACE ORDER
+  // =========================
   Future<String?> placeOrder({
     required String userId,
     required List<CartItemModel> items,
@@ -95,7 +138,10 @@ class OrderProvider with ChangeNotifier {
 
     try {
       _clearError();
-      final subtotal = items.fold<double>(0, (sum, item) => sum + item.total);
+
+      final subtotal =
+          items.fold<double>(0, (sum, item) => sum + item.total);
+
       final orderId = await _firestoreService.placeOrder({
         'userId': userId,
         'products': items.map((e) => e.toOrderMap()).toList(),
@@ -107,6 +153,7 @@ class OrderProvider with ChangeNotifier {
         'paymentMethod': paymentMethod,
         'paymentStatus': paymentStatus.name,
       });
+
       return orderId;
     } catch (e) {
       _setError(e.toString());
@@ -114,6 +161,9 @@ class OrderProvider with ChangeNotifier {
     }
   }
 
+  // =========================
+  // 🔄 UPDATE STATUS (OPTIMISTIC)
+  // =========================
   Future<void> updateOrderStatus({
     required String orderId,
     required OrderStatus status,
@@ -123,8 +173,11 @@ class OrderProvider with ChangeNotifier {
 
     try {
       _clearError();
+
+      /// 🔥 Optimistic update
       if (index != -1) {
-        _orders[index] = _orders[index].copyWith(status: status);
+        _orders[index] =
+            _orders[index].copyWith(status: status);
         notifyListeners();
       }
 
@@ -133,17 +186,51 @@ class OrderProvider with ChangeNotifier {
         newStatus: status,
       );
     } catch (e) {
+      /// 🔁 rollback
       if (index != -1 && backup != null) {
         _orders[index] = backup;
         notifyListeners();
       }
+
       _setError(e.toString());
     }
   }
 
+  // =========================
+  // 🔄 REFRESH
+  // =========================
+  Future<void> refresh() async {
+    _isInitialized = false;
+    _startStream();
+  }
+
+  // =========================
+  // 🔧 HELPERS
+  // =========================
+  void _setLoading(bool value) {
+    if (_isLoading == value) return;
+    _isLoading = value;
+    notifyListeners();
+  }
+
+  void _setError(String message) {
+    _error = message;
+    notifyListeners();
+  }
+
+  void _clearError() {
+    if (_error != null) {
+      _error = null;
+      notifyListeners();
+    }
+  }
+
+  // =========================
+  // 🧹 DISPOSE
+  // =========================
   @override
   void dispose() {
-    _ordersSubscription?.cancel();
+    _subscription?.cancel();
     super.dispose();
   }
 }

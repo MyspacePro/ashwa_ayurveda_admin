@@ -1,22 +1,22 @@
 import 'dart:io';
 import 'package:admin_control/services/firebase/firebase_service.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 
 
 class CategoryAddEditScreen extends StatefulWidget {
-  final FirestoreService firestoreService;
   final Map<String, dynamic>? category;
 
   const CategoryAddEditScreen({
     super.key,
-    required this.firestoreService,
     this.category,
   });
 
   @override
-  State<CategoryAddEditScreen> createState() => _CategoryAddEditScreenState();
+  State<CategoryAddEditScreen> createState() =>
+      _CategoryAddEditScreenState();
 }
 
 class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
@@ -31,6 +31,12 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
   bool _isLoading = false;
 
   bool get isEdit => widget.category != null;
+
+  // =========================
+  // 🔥 FIRESTORE SERVICE (PROVIDER)
+  // =========================
+  FirestoreService get firestore =>
+      context.read<FirestoreService>();
 
   @override
   void initState() {
@@ -55,7 +61,8 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
   // =========================
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked =
+        await picker.pickImage(source: ImageSource.gallery);
 
     if (picked != null) {
       setState(() {
@@ -65,16 +72,19 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
   }
 
   // =========================
-  // ☁️ UPLOAD IMAGE TO FIREBASE STORAGE
+  // ☁️ UPLOAD IMAGE (MOVE TO SERVICE LATER RECOMMENDED)
   // =========================
   Future<String?> _uploadImage(File file) async {
     try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      final fileName =
+          DateTime.now().millisecondsSinceEpoch.toString();
+
       final ref = FirebaseStorage.instance
-          .ref()
-          .child('category_images/$fileName.jpg');
+    .ref()
+    .child('category_images/$fileName.jpg');
 
       final uploadTask = await ref.putFile(file);
+
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
       throw Exception("Image upload failed: $e");
@@ -92,7 +102,6 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
     try {
       String? imageUrl = _existingImageUrl;
 
-      // If new image selected → upload it
       if (_imageFile != null) {
         imageUrl = await _uploadImage(_imageFile!);
       }
@@ -104,46 +113,55 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
       };
 
       if (isEdit) {
-        await widget.firestoreService.updateCategory(
+        await firestore.updateCategory(
           widget.category!['id'],
           data,
         );
       } else {
-        await widget.firestoreService.addCategory(data);
+        await firestore.addCategory(data);
       }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isEdit ? "Category updated" : "Category added",
-            ),
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isEdit ? "Category updated" : "Category added",
           ),
-        );
+        ),
+      );
 
-        Navigator.pop(context);
-      }
+      Navigator.pop(context);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: $e")),
-        );
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   // =========================
-  // 🖼 IMAGE UI
+  // 🖼 IMAGE PREVIEW
   // =========================
   Widget _imagePreview() {
     if (_imageFile != null) {
-      return Image.file(_imageFile!, height: 120, fit: BoxFit.cover);
+      return Image.file(
+        _imageFile!,
+        height: 120,
+        fit: BoxFit.cover,
+      );
     }
 
-    if (_existingImageUrl != null && _existingImageUrl!.isNotEmpty) {
-      return Image.network(_existingImageUrl!, height: 120, fit: BoxFit.cover);
+    if (_existingImageUrl != null &&
+        _existingImageUrl!.isNotEmpty) {
+      return Image.network(
+        _existingImageUrl!,
+        height: 120,
+        fit: BoxFit.cover,
+      );
     }
 
     return Container(
@@ -157,7 +175,8 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEdit ? "Edit Category" : "Add Category"),
+        title:
+            Text(isEdit ? "Edit Category" : "Add Category"),
       ),
 
       body: SingleChildScrollView(
@@ -166,9 +185,6 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // =========================
-              // 🖼 IMAGE PICKER
-              // =========================
               GestureDetector(
                 onTap: _pickImage,
                 child: ClipRRect(
@@ -187,24 +203,19 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
 
               const SizedBox(height: 20),
 
-              // =========================
-              // 🏷 NAME
-              // =========================
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: "Category Name",
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) =>
-                    v == null || v.isEmpty ? "Enter category name" : null,
+                validator: (v) => v == null || v.isEmpty
+                    ? "Enter category name"
+                    : null,
               ),
 
               const SizedBox(height: 16),
 
-              // =========================
-              // 📝 DESCRIPTION
-              // =========================
               TextFormField(
                 controller: _descController,
                 decoration: const InputDecoration(
@@ -216,17 +227,19 @@ class _CategoryAddEditScreenState extends State<CategoryAddEditScreen> {
 
               const SizedBox(height: 24),
 
-              // =========================
-              // 💾 SAVE BUTTON
-              // =========================
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _saveCategory,
+                  onPressed:
+                      _isLoading ? null : _saveCategory,
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(isEdit ? "Update Category" : "Add Category"),
+                      ? const CircularProgressIndicator(
+                          color: Colors.white,
+                        )
+                      : Text(isEdit
+                          ? "Update Category"
+                          : "Add Category"),
                 ),
               ),
             ],
